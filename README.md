@@ -1,0 +1,1 @@
+# tekito_diary
