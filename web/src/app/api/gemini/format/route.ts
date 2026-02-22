@@ -28,6 +28,8 @@ ${timeContext}
 ${userContext || ""}
 
 ルール：
+- 箇条書きは禁止。自然な文章でつなげて書くこと
+- 時系列に沿って、出来事を段落ごとにまとめる
 - 書かれている事実だけを淡々とまとめる
 - 思ってもないことや感情を勝手に追加しない
 - 誇張しない
@@ -45,6 +47,8 @@ ${timeContext}
 ${userContext || ""}
 
 ルール：
+- 箇条書きは禁止。自然な文章でつなげて書くこと
+- 時系列に沿って、出来事を段落ごとにまとめる
 - 書かれている事実だけを淡々とまとめる
 - 思ってもないことや感情を勝手に追加しない
 - 誇張しない
@@ -59,7 +63,9 @@ ${text}${answersSection}`;
             model: "gpt-5-mini",
             messages: [{ role: "user", content: prompt }],
         });
-        return NextResponse.json({ formatted: result.choices[0].message.content || "" });
+        const formatted = (result.choices[0].message.content || "")
+            .replace(/^[-・•]\s*/gm, "");
+        return NextResponse.json({ formatted });
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
         return NextResponse.json({ error: errorMessage }, { status: 500 });
