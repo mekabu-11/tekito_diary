@@ -84,6 +84,7 @@ export default function HistoryContent() {
                     <Calendar
                         onClickDay={handleDateClick}
                         locale="ja-JP"
+                        formatDay={(_locale, date) => String(date.getDate())}
                         tileContent={tileContent}
                         value={selectedDate ? new Date(selectedDate + "T00:00:00") : new Date()}
                     />
