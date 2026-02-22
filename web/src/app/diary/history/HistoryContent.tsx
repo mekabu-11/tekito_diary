@@ -65,7 +65,7 @@ export default function HistoryContent() {
         if (view !== "month") return null;
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
         if (diaryDates.has(key)) {
-            return <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mx-auto mt-0.5" />;
+            return <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mx-auto mt-0.5" />;
         }
         return null;
     };
@@ -76,7 +76,7 @@ export default function HistoryContent() {
                 <button onClick={() => router.push("/diary")} className="p-2 rounded-lg hover:bg-gray-100 transition">
                     <ArrowLeft size={20} className="text-gray-600" />
                 </button>
-                <h1 className="text-lg font-extrabold text-gray-900">📅 日記カレンダー</h1>
+                <h1 className="text-lg font-extrabold text-gray-900">日記カレンダー</h1>
             </header>
 
             <div className="max-w-lg mx-auto p-4 space-y-4">
@@ -99,13 +99,12 @@ export default function HistoryContent() {
                                     {selectedDiary.formatted_text}
                                 </div>
                                 <div className="mt-4 pt-3 border-t border-gray-100">
-                                    <p className="text-xs text-gray-400 font-semibold mb-1">📝 元のメモ</p>
+                                    <p className="text-xs text-gray-400 font-semibold mb-1">元のメモ</p>
                                     <p className="text-xs text-gray-500 whitespace-pre-wrap">{selectedDiary.original_text}</p>
                                 </div>
                             </>
                         ) : (
                             <div className="text-center py-8">
-                                <p className="text-4xl mb-2">📝</p>
                                 <p className="text-sm text-gray-400">この日の日記はまだありません</p>
                             </div>
                         )}

@@ -37,10 +37,9 @@ export default function FollowUpForm({ questions, onSubmit, onSkip, onCancel, is
             <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="p-5 text-center border-b border-gray-100">
-                    <button onClick={onCancel} className="absolute top-4 left-4 text-indigo-500 font-semibold text-sm" disabled={isLoading}>
+                    <button onClick={onCancel} className="absolute top-4 left-4 text-emerald-500 font-semibold text-sm" disabled={isLoading}>
                         ✕ 戻る
                     </button>
-                    <p className="text-3xl mb-1">🤔</p>
                     <h2 className="text-lg font-extrabold text-gray-900">もう少し教えて！</h2>
                     <p className="text-xs text-gray-400 mt-1">回答すると日記がより具体的になります</p>
                 </div>
@@ -56,8 +55,8 @@ export default function FollowUpForm({ questions, onSubmit, onSkip, onCancel, is
                                         key={ci}
                                         onClick={() => selectChoice(idx, c)}
                                         className={`px-3 py-2 rounded-full text-sm font-semibold transition ${!customInputs[idx] && answers[idx] === c
-                                                ? "bg-indigo-500 text-white"
-                                                : "bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                            ? "bg-emerald-500 text-white"
+                                            : "bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50"
                                             }`}
                                     >
                                         {c}
@@ -66,7 +65,7 @@ export default function FollowUpForm({ questions, onSubmit, onSkip, onCancel, is
                             </div>
                             {customInputs[idx] ? (
                                 <input
-                                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
                                     placeholder="自由に入力..."
                                     value={answers[idx]}
                                     onChange={(e) => setAnswers((p) => ({ ...p, [idx]: e.target.value }))}
@@ -77,7 +76,7 @@ export default function FollowUpForm({ questions, onSubmit, onSkip, onCancel, is
                                     onClick={() => { setCustomInputs((p) => ({ ...p, [idx]: true })); setAnswers((p) => ({ ...p, [idx]: "" })); }}
                                     className="text-xs text-gray-400 font-semibold"
                                 >
-                                    ✏️ 自分で入力する
+                                    自分で入力する
                                 </button>
                             )}
                         </div>
@@ -89,7 +88,7 @@ export default function FollowUpForm({ questions, onSubmit, onSkip, onCancel, is
                     <button
                         onClick={handleSubmit}
                         disabled={isLoading}
-                        className="w-full py-3 rounded-xl bg-indigo-500 text-white font-bold text-sm hover:bg-indigo-600 transition disabled:opacity-50"
+                        className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-50"
                     >
                         {isLoading ? "日記を生成中..." : "この内容で日記にする"}
                     </button>

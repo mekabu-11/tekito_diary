@@ -197,7 +197,7 @@ export default function DiaryPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Header */}
             <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-                <h1 className="text-lg font-extrabold text-gray-900">📖 てきとー日記</h1>
+                <h1 className="text-lg font-extrabold text-gray-900">てきとー日記</h1>
                 <div className="flex items-center gap-2">
                     {isAdmin && (
                         <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-gray-100 transition">
@@ -213,15 +213,15 @@ export default function DiaryPage() {
             <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
                 {/* Date Selector */}
                 <div className="flex items-center bg-white rounded-2xl p-3 shadow-sm">
-                    <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition">
-                        <ChevronLeft size={20} className="text-indigo-500" />
+                    <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+                        <ChevronLeft size={20} className="text-emerald-500" />
                     </button>
                     <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center">
                         <p className="text-xl font-extrabold text-gray-900">{toDateLabel(selectedDate)}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{toDisplayDate(selectedDate)}</p>
                     </button>
-                    <button onClick={() => shiftDate(1)} className="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition">
-                        <ChevronRight size={20} className="text-indigo-500" />
+                    <button onClick={() => shiftDate(1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+                        <ChevronRight size={20} className="text-emerald-500" />
                     </button>
                 </div>
 
@@ -240,7 +240,7 @@ export default function DiaryPage() {
                 <button
                     onClick={handleSubmit}
                     disabled={isLoading || !text.trim()}
-                    className="w-full py-4 rounded-2xl bg-indigo-500 text-white font-bold text-sm hover:bg-indigo-600 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+                    className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
                 >
                     {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
                     {isLoading ? "質問を生成中..." : "AIで日記にする"}
@@ -249,7 +249,7 @@ export default function DiaryPage() {
                 {/* History */}
                 <button
                     onClick={() => router.push("/diary/history")}
-                    className="w-full py-3 rounded-xl bg-indigo-50 text-indigo-600 font-bold text-sm hover:bg-indigo-100 transition flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm hover:bg-emerald-100 transition flex items-center justify-center gap-2"
                 >
                     <Calendar size={18} />
                     カレンダーで日記を見る

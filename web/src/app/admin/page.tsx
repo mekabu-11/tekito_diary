@@ -98,11 +98,11 @@ export default function AdminPage() {
                 <button onClick={() => router.push("/diary")} className="p-2 rounded-lg hover:bg-gray-100 transition">
                     <ArrowLeft size={20} className="text-gray-600" />
                 </button>
-                <h1 className="text-lg font-extrabold text-gray-900">🛡️ ユーザー管理</h1>
+                <h1 className="text-lg font-extrabold text-gray-900">ユーザー管理</h1>
                 <div className="flex-1" />
                 <button
                     onClick={() => setShowCreate(!showCreate)}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-600 transition"
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition"
                 >
                     <Plus size={16} /> 追加
                 </button>
@@ -119,14 +119,14 @@ export default function AdminPage() {
                             placeholder="表示名"
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
                         />
                         <input
                             type="email"
                             placeholder="メールアドレス"
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
                             required
                         />
                         <input
@@ -134,11 +134,11 @@ export default function AdminPage() {
                             placeholder="パスワード"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
                             required
                         />
                         <div className="flex gap-2">
-                            <button type="submit" disabled={creating} className="flex-1 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold disabled:opacity-50">
+                            <button type="submit" disabled={creating} className="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold disabled:opacity-50">
                                 {creating ? "作成中..." : "作成"}
                             </button>
                             <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-semibold">
@@ -151,7 +151,7 @@ export default function AdminPage() {
                 {/* User List */}
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader2 size={24} className="animate-spin text-indigo-400" />
+                        <Loader2 size={24} className="animate-spin text-emerald-400" />
                     </div>
                 ) : (
                     <div className="space-y-2">

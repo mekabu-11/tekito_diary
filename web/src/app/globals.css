@@ -21,18 +21,18 @@
 }
 
 .calendar-wrapper .react-calendar__tile--active {
-  background: #6C63FF !important;
+  background: #10B981 !important;
   color: white;
   border-radius: 12px;
 }
 
 .calendar-wrapper .react-calendar__tile--now {
-  background: #F0EEFF;
+  background: #D1FAE5;
   border-radius: 12px;
 }
 
 .calendar-wrapper .react-calendar__tile:hover {
-  background: #EEEDFF;
+  background: #A7F3D0;
   border-radius: 12px;
 }
 
