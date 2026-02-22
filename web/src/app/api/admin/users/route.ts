@@ -56,14 +56,8 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // user_profiles にも追加
-    if (data.user) {
-        await adminSupa.from("user_profiles").upsert({
-            id: data.user.id,
-            display_name: displayName || "",
-            role: "user",
-        });
-    }
+    // user_profiles への追加はSupabase側の trigger (on_auth_user_created) で自動的に行われるため不要
+    // （ここでupsertすると primary key conflict や RLS エラーになる可能性があるため削除）
 
     return NextResponse.json({ user: data.user });
 }

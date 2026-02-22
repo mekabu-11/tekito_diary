@@ -2,12 +2,24 @@
 export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase";
-import { BookOpen, Loader2, Lock, Mail } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { useState } from "react";
+
+function translateError(msg: string): string {
+    if (msg.includes("Invalid login credentials")) return "メールアドレスまたはパスワードが正しくありません";
+    if (msg.includes("Email not confirmed")) return "メールアドレスが確認されていません";
+    if (msg.includes("Too many requests")) return "試行回数が多すぎます。しばらく待ってから再試行してください";
+    if (msg.includes("User not found")) return "ユーザーが見つかりません";
+    if (msg.includes("Password should be at least")) return "パスワードは6文字以上で入力してください";
+    if (msg.includes("Unable to validate email")) return "有効なメールアドレスを入力してください";
+    if (msg.includes("network")) return "ネットワークエラーが発生しました。接続を確認してください";
+    return msg; // fallback（翻訳できなかった場合はそのまま）
+}
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const supabase = createClient();
@@ -20,7 +32,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-            setError(error.message);
+            setError(translateError(error.message));
             setIsLoading(false);
         } else {
             window.location.href = "/diary";
@@ -63,13 +75,21 @@ export default function LoginPage() {
                         <div className="relative">
                             <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition text-sm"
+                                className="w-full pl-10 pr-11 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition text-sm"
                                 placeholder="••••••••"
                                 required
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
                     </div>
 
