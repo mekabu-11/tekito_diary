@@ -2,15 +2,16 @@ import { createAdminSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 
-webpush.setVapidDetails(
-    process.env.VAPID_EMAIL!,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-);
-
 // Vercel Cron または手動テスト用: 毎時 xx:00 に呼ばれる想定
 // Cron schedule: "0 * * * *" (毎時0分)
 export async function GET(request: NextRequest) {
+    // VAPID 設定はリクエスト時に行う（ビルド時に実行するとエラーになるため）
+    webpush.setVapidDetails(
+        process.env.VAPID_EMAIL!,
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+        process.env.VAPID_PRIVATE_KEY!
+    );
+
     // CRON_SECRET で保護
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
