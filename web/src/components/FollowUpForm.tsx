@@ -1,0 +1,103 @@
+"use client";
+
+import { useState } from "react";
+
+interface Question {
+    question: string;
+    choices: string[];
+}
+
+interface Props {
+    questions: Question[];
+    onSubmit: (answers: { question: string; answer: string }[]) => void;
+    onSkip: () => void;
+    onCancel: () => void;
+    isLoading: boolean;
+}
+
+export default function FollowUpForm({ questions, onSubmit, onSkip, onCancel, isLoading }: Props) {
+    const [answers, setAnswers] = useState<{ [idx: number]: string }>(
+        () => Object.fromEntries(questions.map((_, i) => [i, ""]))
+    );
+    const [customInputs, setCustomInputs] = useState<{ [idx: number]: boolean }>(
+        () => Object.fromEntries(questions.map((_, i) => [i, false]))
+    );
+
+    const selectChoice = (idx: number, choice: string) => {
+        setCustomInputs((p) => ({ ...p, [idx]: false }));
+        setAnswers((p) => ({ ...p, [idx]: choice }));
+    };
+
+    const handleSubmit = () => {
+        onSubmit(questions.map((q, i) => ({ question: q.question, answer: answers[i] || "" })));
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+            <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl">
+                {/* Header */}
+                <div className="p-5 text-center border-b border-gray-100">
+                    <button onClick={onCancel} className="absolute top-4 left-4 text-indigo-500 font-semibold text-sm" disabled={isLoading}>
+                        ✕ 戻る
+                    </button>
+                    <p className="text-3xl mb-1">🤔</p>
+                    <h2 className="text-lg font-extrabold text-gray-900">もう少し教えて！</h2>
+                    <p className="text-xs text-gray-400 mt-1">回答すると日記がより具体的になります</p>
+                </div>
+
+                {/* Questions */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                    {questions.map((q, idx) => (
+                        <div key={idx} className="bg-gray-50 rounded-2xl p-4">
+                            <p className="font-bold text-sm text-gray-800 mb-3">{q.question}</p>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {q.choices.map((c, ci) => (
+                                    <button
+                                        key={ci}
+                                        onClick={() => selectChoice(idx, c)}
+                                        className={`px-3 py-2 rounded-full text-sm font-semibold transition ${!customInputs[idx] && answers[idx] === c
+                                                ? "bg-indigo-500 text-white"
+                                                : "bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                            }`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
+                            {customInputs[idx] ? (
+                                <input
+                                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+                                    placeholder="自由に入力..."
+                                    value={answers[idx]}
+                                    onChange={(e) => setAnswers((p) => ({ ...p, [idx]: e.target.value }))}
+                                    autoFocus
+                                />
+                            ) : (
+                                <button
+                                    onClick={() => { setCustomInputs((p) => ({ ...p, [idx]: true })); setAnswers((p) => ({ ...p, [idx]: "" })); }}
+                                    className="text-xs text-gray-400 font-semibold"
+                                >
+                                    ✏️ 自分で入力する
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Actions */}
+                <div className="p-5 border-t border-gray-100 space-y-2">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isLoading}
+                        className="w-full py-3 rounded-xl bg-indigo-500 text-white font-bold text-sm hover:bg-indigo-600 transition disabled:opacity-50"
+                    >
+                        {isLoading ? "日記を生成中..." : "この内容で日記にする"}
+                    </button>
+                    <button onClick={onSkip} disabled={isLoading} className="w-full py-2 text-sm text-gray-400 font-semibold">
+                        スキップしてそのまま保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

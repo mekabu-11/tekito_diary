@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Calendar styling overrides */
+.calendar-wrapper .react-calendar {
+  width: 100%;
+  border: none;
+  font-family: inherit;
+  border-radius: 16px;
+}
+
+.calendar-wrapper .react-calendar__navigation button {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.calendar-wrapper .react-calendar__tile {
+  border-radius: 12px;
+  padding: 10px 6px;
+  font-size: 13px;
+}
+
+.calendar-wrapper .react-calendar__tile--active {
+  background: #6C63FF !important;
+  color: white;
+  border-radius: 12px;
+}
+
+.calendar-wrapper .react-calendar__tile--now {
+  background: #F0EEFF;
+  border-radius: 12px;
+}
+
+.calendar-wrapper .react-calendar__tile:hover {
+  background: #EEEDFF;
+  border-radius: 12px;
+}
+
+.calendar-wrapper .react-calendar__month-view__weekdays {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8888A0;
+}
