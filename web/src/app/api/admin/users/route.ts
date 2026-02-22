@@ -47,19 +47,45 @@ export async function POST(request: NextRequest) {
     const { email, password, displayName } = await request.json();
     const adminSupa = await createAdminSupabase();
 
-    const { data, error } = await adminSupa.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { display_name: displayName || "" },
-    });
+    try {
+        const { data, error } = await adminSupa.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: { display_name: displayName || "" },
+        });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error) {
+            console.error("createUser error:", JSON.stringify(error, null, 2));
+            return NextResponse.json({ error: error.message || "ユーザー作成に失敗しました" }, { status: 500 });
+        }
 
-    // user_profiles への追加はSupabase側の trigger (on_auth_user_created) で自動的に行われるため不要
-    // （ここでupsertすると primary key conflict や RLS エラーになる可能性があるため削除）
+        if (!data?.user) {
+            return NextResponse.json({ error: "ユーザーデータが返されませんでした" }, { status: 500 });
+        }
 
-    return NextResponse.json({ user: data.user });
+        // トリガーが失敗した場合に備えて、user_profiles を手動で upsert する
+        const { error: profileError } = await adminSupa
+            .from("user_profiles")
+            .upsert(
+                {
+                    id: data.user.id,
+                    display_name: displayName || "",
+                    role: "user",
+                },
+                { onConflict: "id" }
+            );
+
+        if (profileError) {
+            console.error("user_profiles upsert error:", profileError);
+            // プロファイル作成は失敗してもユーザー自体は作成されているので、警告として返す
+        }
+
+        return NextResponse.json({ user: data.user });
+    } catch (err: any) {
+        console.error("POST /api/admin/users unexpected error:", err);
+        return NextResponse.json({ error: err?.message || "予期しないエラーが発生しました" }, { status: 500 });
+    }
 }
 
 // ユーザー削除

@@ -91,8 +91,13 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data->>'display_name', ''),
     case when new.email = 'gamingmokugyo@gmail.com' then 'admin' else 'user' end
-  );
+  )
+  on conflict (id) do nothing;
   return new;
+exception
+  when others then
+    raise warning 'handle_new_user trigger failed for user %: %', new.id, sqlerrm;
+    return new;
 end;
 $$ language plpgsql security definer;
 
