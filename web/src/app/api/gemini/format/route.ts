@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { text, currentTime, answers, existingText, userContext } = await request.json();
+    const { text, currentTime, answers, existingText, userContext, model } = await request.json();
 
     const timeContext = `現在の時刻は ${currentTime} です。メモに時間帯の手がかりがない場合、この時刻を参考に時間帯を自然に推測して反映してください。ただし無理に付け足さなくてよいです。`;
 
@@ -60,7 +60,7 @@ ${text}${answersSection}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: "gpt-5-mini",
+            model: model || "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
         });
         const formatted = (result.choices[0].message.content || "")

@@ -37,6 +37,7 @@ export default function DiaryPage() {
     const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
     const [showConflictModal, setShowConflictModal] = useState(false);
     const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
+    const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
     const dateKey = toDateKey(selectedDate);
 
     useEffect(() => {
@@ -109,7 +110,7 @@ export default function DiaryPage() {
             const res = await fetch("/api/gemini/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, userContext }),
+                body: JSON.stringify({ text, userContext, model: selectedModel }),
             });
             const data = await res.json();
             if (data.questions?.length > 0) {
@@ -151,6 +152,7 @@ export default function DiaryPage() {
                     answers,
                     existingText: mode === "merge" ? existingRec?.original_text : undefined,
                     userContext,
+                    model: selectedModel,
                 }),
             });
             const data = await res.json();
@@ -187,6 +189,7 @@ export default function DiaryPage() {
                     originalMemo: text,
                     dateKey,
                     currentProfile: profile || {},
+                    model: selectedModel,
                 }),
             });
 
@@ -222,9 +225,19 @@ export default function DiaryPage() {
                         <span className="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-50 rounded-lg">{displayName}</span>
                     )}
                     {isAdmin && (
-                        <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
-                            <Shield size={18} className="text-amber-500" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 outline-none"
+                            >
+                                <option value="gpt-4o-mini">gpt-mini</option>
+                                <option value="gpt-5-nano">gpt-nano</option>
+                            </select>
+                            <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
+                                <Shield size={18} className="text-amber-500" />
+                            </button>
+                        </div>
                     )}
                     <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-gray-100 transition">
                         <LogOut size={18} className="text-gray-500" />

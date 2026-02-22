@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { diaryText, originalMemo, dateKey, currentProfile } = await request.json();
+    const { diaryText, originalMemo, dateKey, currentProfile, model } = await request.json();
 
     const prompt = `以下の日記を読んで、この人についての情報を2つのカテゴリに分けて抽出してください。
 
@@ -39,7 +39,7 @@ ${originalMemo}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: "gpt-5-mini",
+            model: model || "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
         });
         const raw = (result.choices[0].message.content || "").trim();

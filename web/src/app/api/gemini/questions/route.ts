@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { text, userContext } = await request.json();
+    const { text, userContext, model } = await request.json();
 
     const prompt = `以下のメモを読んで、日記をより具体的にするための深掘り質問を生成してください。
 
@@ -33,7 +33,7 @@ ${text}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: "gpt-5-mini",
+            model: model || "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
         });
         const raw = (result.choices[0].message.content || "").trim();
