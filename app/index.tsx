@@ -261,6 +261,7 @@ export default function Home() {
                         questions={followUpQuestions}
                         onSubmit={handleFollowUpSubmit}
                         onSkip={handleFollowUpSkip}
+                        onCancel={() => setShowFollowUp(false)}
                         isLoading={isGeneratingFinal}
                     />
                 </SafeAreaView>

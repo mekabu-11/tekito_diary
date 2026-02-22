@@ -14,10 +14,11 @@ interface Props {
     questions: FollowUpQuestion[];
     onSubmit: (answers: { question: string; answer: string }[]) => void;
     onSkip: () => void;
+    onCancel: () => void;
     isLoading: boolean;
 }
 
-export function FollowUpForm({ questions, onSubmit, onSkip, isLoading }: Props) {
+export function FollowUpForm({ questions, onSubmit, onSkip, onCancel, isLoading }: Props) {
     const [answers, setAnswers] = useState<{ [idx: number]: string }>(
         () => Object.fromEntries(questions.map((_, i) => [i, '']))
     );
@@ -50,6 +51,9 @@ export function FollowUpForm({ questions, onSubmit, onSkip, isLoading }: Props) 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                <TouchableOpacity onPress={onCancel} style={styles.closeBtn} disabled={isLoading}>
+                    <Text style={styles.closeBtnText}>✕ 戻る</Text>
+                </TouchableOpacity>
                 <Text style={styles.headerEmoji}>🤔</Text>
                 <Text style={styles.headerTitle}>もう少し教えて！</Text>
                 <Text style={styles.headerSub}>回答すると日記がより具体的になります</Text>
@@ -135,6 +139,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingTop: 20,
         paddingBottom: 12,
+    },
+    closeBtn: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+    },
+    closeBtnText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#6C63FF',
     },
     headerEmoji: {
         fontSize: 32,
