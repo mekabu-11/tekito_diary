@@ -46,7 +46,7 @@ export default function DiaryPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         // メールアドレスをフォールバックとして表示
-        setDisplayName(user.email?.split("@")[0] || "");
+        setDisplayName(user.email || "");
         const { data, error } = await supabase.from("user_profiles").select("role, display_name").eq("id", user.id).single();
         if (!error && data) {
             setIsAdmin(data.role === "admin");
