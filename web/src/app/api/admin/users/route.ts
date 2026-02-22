@@ -22,21 +22,36 @@ export async function GET(request: NextRequest) {
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const adminSupa = await createAdminSupabase();
-    const { data: { users }, error } = await adminSupa.auth.admin.listUsers();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    const { data: profiles } = await adminSupa.from("user_profiles").select("*");
-    const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]));
+    // Auth ユーザー一覧を取得
+    const { data: authData, error: authError } = await adminSupa.auth.admin.listUsers();
 
-    const result = users.map((u: any) => ({
-        id: u.id,
-        email: u.email,
-        displayName: profileMap[u.id]?.display_name || "",
-        role: profileMap[u.id]?.role || "user",
-        createdAt: u.created_at,
-    }));
+    if (authError) {
+        return NextResponse.json({ error: authError.message }, { status: 500 });
+    }
 
-    return NextResponse.json({ users: result });
+    // プロファイル一覧を取得
+    const { data: profiles, error: profileError } = await adminSupa
+        .from("user_profiles")
+        .select("*");
+
+    if (profileError) {
+        return NextResponse.json({ error: profileError.message }, { status: 500 });
+    }
+
+    // 結合
+    const users = authData.users.map((u) => {
+        const profile = profiles.find((p) => p.id === u.id);
+        return {
+            id: u.id,
+            email: u.email,
+            created_at: u.created_at,
+            display_name: profile?.display_name || "",
+            role: profile?.role || "user",
+        };
+    });
+
+    return NextResponse.json({ users });
 }
 
 // ユーザー作成
@@ -82,9 +97,10 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ user: data.user });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("POST /api/admin/users unexpected error:", err);
-        return NextResponse.json({ error: err?.message || "予期しないエラーが発生しました" }, { status: 500 });
+        const errorMessage = err instanceof Error ? err.message : "予期しないエラーが発生しました";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
 
@@ -93,12 +109,17 @@ export async function DELETE(request: NextRequest) {
     const admin = await checkAdmin(request);
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const { userId } = await request.json();
+    const { id } = await request.json();
     const adminSupa = await createAdminSupabase();
 
-    const { error } = await adminSupa.auth.admin.deleteUser(userId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ success: true });
+    try {
+        const { error } = await adminSupa.auth.admin.deleteUser(id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "削除に失敗しました";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    }
 }
 
 // ユーザー更新（メール・表示名・ロール）
@@ -109,18 +130,24 @@ export async function PATCH(request: NextRequest) {
     const { userId, displayName, role, email } = await request.json();
     const adminSupa = await createAdminSupabase();
 
-    // メールアドレス変更
-    if (email) {
-        const { error } = await adminSupa.auth.admin.updateUserById(userId, { email });
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    try {
+        // メールアドレス変更
+        if (email) {
+            const { error: emailError } = await adminSupa.auth.admin.updateUserById(userId, { email });
+            if (emailError) throw emailError;
+        }
+
+        // プロファイル更新
+        const { error: profileError } = await adminSupa.from("user_profiles").upsert({
+            id: userId,
+            display_name: displayName,
+            role,
+        });
+        if (profileError) throw profileError;
+
+        return NextResponse.json({ success: true });
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "更新に失敗しました";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
-
-    // プロファイル更新
-    await adminSupa.from("user_profiles").upsert({
-        id: userId,
-        display_name: displayName,
-        role,
-    });
-
-    return NextResponse.json({ success: true });
 }

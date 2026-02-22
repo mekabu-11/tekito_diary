@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { ArrowLeft, Check, Edit3, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface User {
     id: string;
@@ -29,25 +29,24 @@ export default function AdminPage() {
     const [editRole, setEditRole] = useState("");
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        checkAdminAndLoad();
-    }, []);
-
-    const checkAdminAndLoad = async () => {
-        const res = await fetch("/api/auth/profile");
-        if (!res.ok) { router.push("/login"); return; }
-        const profile = await res.json();
-        if (!profile.isAdmin) { router.push("/diary"); return; }
-        await loadUsers();
-    };
-
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         setIsLoading(true);
         const res = await fetch("/api/admin/users");
         const data = await res.json();
         setUsers(data.users || []);
         setIsLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        const checkAdminAndLoad = async () => {
+            const res = await fetch("/api/auth/profile");
+            if (!res.ok) { router.push("/login"); return; }
+            const profile = await res.json();
+            if (!profile.isAdmin) { router.push("/diary"); return; }
+            await loadUsers();
+        };
+        checkAdminAndLoad();
+    }, [router, loadUsers]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();

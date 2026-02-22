@@ -39,7 +39,8 @@ ${text}`;
         const jsonMatch = raw.match(/\[[\s\S]*\]/);
         const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
         return NextResponse.json({ questions: questions.slice(0, 5) });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

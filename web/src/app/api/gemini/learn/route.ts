@@ -40,25 +40,38 @@ ${originalMemo}`;
 
     try {
         const result = await model.generateContent(prompt);
-        const raw = result.response.text().trim();
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) return NextResponse.json({ profile: null, episodes: [] });
+        const response = await result.response;
+        const raw = response.text().trim();
 
-        const parsed = JSON.parse(jsonMatch[0]);
+        // --- 修正箇所：JSONのパース処理を堅牢にする ---
+        // 1. バッククォートによるコードブロック (```json ... ```) を除去
+        let cleanRaw = raw.replace(/^```json/im, '').replace(/```$/m, '').trim();
+
+        // 2. 波括弧 {} の外側にある余計な文字（もしあれば）を取り除く
+        const match = cleanRaw.match(/\{[\s\S]*\}/);
+        if (!match) {
+            // If no JSON object is found, return an empty profile and episodes
+            return NextResponse.json({ profile: null, episodes: [] });
+        }
+        cleanRaw = match[0];
+
+        const parsed = JSON.parse(cleanRaw);
+        const newProfile = parsed.profile; // Extract the 'profile' part
+        const newEpisodes = parsed.episodes; // Extract the 'episodes' part
 
         // コアプロファイル保存
-        if (parsed.profile) {
+        if (newProfile) {
             await supabase.from("core_profiles").upsert({
                 user_id: user.id,
-                ...parsed.profile,
+                ...newProfile,
                 updated_at: new Date().toISOString(),
             });
         }
 
         // エピソード保存
-        if (parsed.episodes?.length > 0) {
+        if (newEpisodes?.length > 0) {
             await supabase.from("episodes").insert(
-                parsed.episodes.map((content: string) => ({
+                newEpisodes.map((content: string) => ({
                     user_id: user.id,
                     content,
                     date: dateKey,
@@ -78,9 +91,10 @@ ${originalMemo}`;
             }
         }
 
-        return NextResponse.json({ success: true });
-    } catch (error: any) {
-        console.warn("Learn error:", error.message);
-        return NextResponse.json({ success: false });
+        return NextResponse.json({ success: true, profile: newProfile });
+    } catch (error: unknown) {
+        console.error("Profile learn error:", error);
+        const errorMessage = error instanceof Error ? error.message : "学習エラー";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

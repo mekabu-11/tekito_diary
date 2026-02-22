@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase";
 import { ArrowLeft, Check, Edit3, Loader2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
@@ -29,11 +29,7 @@ export default function HistoryContent() {
     const [editText, setEditText] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        loadDiaries();
-    }, []);
-
-    const loadDiaries = async () => {
+    const loadDiaries = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
@@ -55,7 +51,12 @@ export default function HistoryContent() {
                 }
             }
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialDate]); // We don't want to re-run this on every supabase instance change
+
+    useEffect(() => {
+        loadDiaries();
+    }, [loadDiaries]);
 
     const handleDateClick = (date: Date) => {
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;

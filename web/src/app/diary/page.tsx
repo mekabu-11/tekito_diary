@@ -30,12 +30,12 @@ export default function DiaryPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showFollowUp, setShowFollowUp] = useState(false);
-    const [questions, setQuestions] = useState<any[]>([]);
+    const [questions, setQuestions] = useState<{ question: string; choices: string[] }[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [displayName, setDisplayName] = useState("");
     const [pendingMode, setPendingMode] = useState<"new" | "merge" | "replace">("new");
-    const [pendingExisting, setPendingExisting] = useState<any>(null);
+    const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
     const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
     const dateKey = toDateKey(selectedDate);
@@ -179,8 +179,9 @@ export default function DiaryPage() {
             setText("");
             setShowFollowUp(false);
             router.push(`/diary/history?date=${dateKey}`);
-        } catch (err: any) {
-            alert(err.message);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "予期しないエラーが発生しました";
+            alert(errorMessage);
         } finally {
             setIsGenerating(false);
         }

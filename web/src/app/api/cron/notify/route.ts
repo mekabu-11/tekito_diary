@@ -2,6 +2,16 @@ import { createAdminSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 
+interface SubscriptionRecord {
+    id: string;
+    endpoint: string;
+    keys: {
+        p256dh: string;
+        auth: string;
+    };
+    user_id: string; // for deletion
+}
+
 // Vercel Cron または手動テスト用: 毎時 xx:00 に呼ばれる想定
 // Cron schedule: "0 * * * *" (毎時0分)
 export async function GET(request: NextRequest) {
@@ -15,29 +25,23 @@ export async function GET(request: NextRequest) {
     // CRON_SECRET で保護
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return new NextResponse("Unauthorized", { status: 401 });
     }
-
-    // 現在のJST時刻（時のみ）を取得
-    const now = new Date();
-    // JST = UTC+9
-    const jstHour = (now.getUTCHours() + 9) % 24;
 
     const adminSupa = await createAdminSupabase();
 
-    // 現在の「時」に設定している購読者を全員取得（分は0固定）
+    // 日本時間の現在の「時」(0-23)を取得して文字列化
+    const jstNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+    const currentHourStr = String(jstNow.getHours()).padStart(2, "0");
+
+    // notify_time が現在の時のものを取得
     const { data: subscriptions, error } = await adminSupa
         .from("notification_subscriptions")
         .select("*")
-        .eq("notify_hour", jstHour);
+        .eq("notify_time", currentHourStr);
 
-    if (error) {
-        console.error("Failed to fetch subscriptions:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-        return NextResponse.json({ sent: 0, message: "No subscribers at this time" });
+    if (error || !subscriptions?.length) {
+        return NextResponse.json({ sent: 0, failed: 0, message: "No subscriptions for this hour" });
     }
 
     const payload = JSON.stringify({
@@ -47,19 +51,20 @@ export async function GET(request: NextRequest) {
     });
 
     const results = await Promise.allSettled(
-        subscriptions.map((sub: any) =>
+        (subscriptions as SubscriptionRecord[]).map((sub) =>
             webpush.sendNotification(
                 {
                     endpoint: sub.endpoint,
                     keys: {
-                        p256dh: sub.p256dh,
-                        auth: sub.auth,
+                        p256dh: sub.keys.p256dh,
+                        auth: sub.keys.auth,
                     },
                 },
                 payload
-            ).catch(async (err: any) => {
+            ).catch(async (err: unknown) => {
                 // 購読が無効（410 Gone）なら削除
-                if (err.statusCode === 410) {
+                const pushError = err as { statusCode?: number };
+                if (pushError.statusCode === 410) {
                     await adminSupa
                         .from("notification_subscriptions")
                         .delete()

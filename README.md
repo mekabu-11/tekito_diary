@@ -1,6 +1,6 @@
 # 📖 てきとー日記 (Tekito Diary)
 
-「今日あったこと」を適当に書くだけで、AIが深掘り質問をして濃い日記に仕上げてくれるスマホアプリ。
+「今日あったこと」を適当に書くだけで、AIが深掘り質問をして濃い日記に仕上げてくれるWebアプリケーション。
 
 ---
 
@@ -12,11 +12,12 @@
 | **AI深掘り質問** | メモの抽象度に応じて2〜5個の質問を自動生成。選択肢タップ or 自由入力で回答 |
 | **AI日記整形 (Gemini)** | メモ＋回答をもとに、事実ベースで読みやすい日記を自動生成 |
 | **時間帯推測** | 入力時刻から「朝」「夜」など時間帯を自然に文章に反映 |
-| **日付選択** | 今日以外の日付の日記も書ける（◀ ▶ で日付移動） |
+| **ユーザープロファイル学習** | 日記の内容からユーザーの「性格」「人間関係」「よく行く場所」などを自動学習し、次回以降の日記生成に活用 |
 | **同日マージ/上書き** | 同じ日に複数回書く場合、追記（マージ）か上書き（削除して新規）を選択可能 |
-| **カレンダー履歴** | 日本語カレンダーで過去の日記を閲覧。日記がある日は紫のドットで表示 |
-| **ローカル保存** | 整形された日記をAsyncStorageでデバイス内に永続保存 |
-| **リマインド通知** | 毎日0時にローカル通知で日記の記入をリマインド（実機のみ） |
+| **カレンダー履歴** | カレンダー形式で過去の日記を閲覧。日記がある日はドットで表示 |
+| **日記の再編集** | 履歴画面から、AIが生成した日記テキストを自由に手直し可能 |
+| **PWA & プッシュ通知** | アプリとしてホーム画面に追加可能。毎日指定した時刻に「日記を書こう」とPush通知が届く |
+| **管理画面** | 登録ユーザーの一覧表示、新規作成、権限変更（User/Admin）、削除機能 |
 
 ---
 
@@ -24,36 +25,34 @@
 
 | カテゴリ | 技術 |
 |---|---|
-| フレームワーク | React Native (Expo SDK 54) |
-| 言語 | TypeScript |
-| ルーティング | Expo Router (ファイルベース) |
-| AI API | Google Gemini (`@google/generative-ai`) |
-| ローカル保存 | `@react-native-async-storage/async-storage` |
-| カレンダー | `react-native-calendars` |
-| 通知 | `expo-notifications`（ローカル通知） |
-| アイコン | `lucide-react-native` |
+| フレームワーク | **Next.js** (App Router) |
+| 言語 | **TypeScript** |
+| スタイリング | **Tailwind CSS** |
+| アイコン | `lucide-react` |
+| 認証・データベース | **Supabase** (Auth / PostgreSQL / RLS) |
+| AI API | **Google Gemini** (`@google/generative-ai`) |
+| プッシュ通知 | **Web Push** (`web-push`) + Vercel Cron |
+| ホスティング | **Vercel** |
 
 ---
 
 ## 📁 ディレクトリ構成
 
 ```
-tekito_diary/
-├── app/                          # 画面
-│   ├── _layout.tsx               # ルートレイアウト (Stack + 通知初期化)
-│   ├── index.tsx                 # ホーム (入力・日付選択・深掘り質問・AI変換)
-│   └── history.tsx               # カレンダー日記閲覧
-├── components/
-│   ├── DiaryCard.tsx             # 日記表示カード
-│   └── FollowUpForm.tsx          # AI深掘り質問フォーム（選択肢 + 自由入力）
-├── services/
-│   ├── gemini.ts                 # Gemini API（質問生成 + 日記整形）
-│   ├── storage.ts                # AsyncStorage CRUD
-│   └── notification.ts           # ローカル通知スケジュール
-├── .env                          # 環境変数（APIキー）
-├── app.json                      # Expo設定
-├── eas.json                      # EAS Build設定
-└── package.json
+tekito_diary/web/
+├── src/
+│   ├── app/
+│   │   ├── admin/           # 管理者ページ
+│   │   ├── api/             # API Router (Auth, Admin, Cron, Gemini, Notifications)
+│   │   ├── diary/           # 日記入力・カレンダー履歴
+│   │   ├── login/           # ログインページ
+│   │   ├── layout.tsx       # 共通レイアウト
+│   │   └── page.tsx         # ルート（ログインへリダイレクト）
+│   ├── components/          # 共通UIコンポーネント (NotificationSettings, FollowUpForm)
+│   └── lib/                 # Supabase クライアント設定
+├── public/                  # PWAマニフェスト、サービスワーカー (sw.js)、アイコン
+├── supabase-schema.sql      # Supabase用 データベースマイグレーション
+└── next.config.ts           # Next.js の設定
 ```
 
 ---
@@ -64,150 +63,79 @@ tekito_diary/
 
 - **Node.js** v20以上
 - **npm**
-- **Google Gemini APIキー**（[Google AI Studio](https://aistudio.google.com/apikey) で無料取得）
+- **Supabase** プロジェクト（[作成はこちら](https://supabase.com/)）
+- **Google Gemini APIキー**（[Google AI Studio](https://aistudio.google.com/apikey)）
 
-### セットアップ
+### セットアップ手順
 
+**1. リポジトリのクローン**
 ```bash
-# 1. クローン
-git clone https://github.com/your-username/tekito_diary.git
-cd tekito_diary
+git clone https://github.com/mekabu-11/tekito_diary.git
+cd tekito_diary/web
+```
 
-# 2. パッケージインストール
+**2. パッケージのインストール**
+```bash
 npm install
-
-# 3. APIキー設定
-# .env ファイルを編集:
-EXPO_PUBLIC_GEMINI_API_KEY=ここにあなたのAPIキーを貼り付け
 ```
 
-> [!CAUTION]
-> `.env` ファイルは `.gitignore` に含まれています。APIキーを絶対にGitにコミットしないでください。
+**3. VAPIDキーの生成（プッシュ通知用）**
+```bash
+npx web-push generate-vapid-keys
+# 出力された Public Key と Private Key を控える
+```
+
+**4. 環境変数の設定**
+webディレクトリ内に `.env.local` を作成し、以下の内容を設定します。
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=あなたのSupabaseのURL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=あなたのSupabaseのanonキー
+SUPABASE_SERVICE_ROLE_KEY=あなたのSupabaseのservice_roleキー
+
+# Gemini API
+GEMINI_API_KEY=あなたのGemini APIキー
+
+# Web Push Notifications
+VAPID_EMAIL=mailto:あなたのメールアドレス
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=生成したVAPID Public Key
+VAPID_PRIVATE_KEY=生成したVAPID Private Key
+
+# Vercel Cron Secret (Cronジョブの不正アクセス防止)
+CRON_SECRET=ランダムな文字列を設定
+```
+
+**5. データベースの構築**
+Supabaseのダッシュボード（SQL Editor）を開き、`supabase-schema.sql` の内容をすべて実行して、テーブル・RLS・トリガーを作成します。
+
+**6. ローカルサーバーの起動**
+```bash
+npm run dev
+```
+ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
 
 ---
 
-## 📱 アプリの起動・ビルド方法
+## ☁️ デプロイ (Vercel)
 
-### 方法①：Expo Go（開発用 / PCが必要）
+このプロジェクトは Vercel に最適化されています。
 
-PCで開発サーバーを起動し、スマホのExpo Goアプリで接続します。
+1. GitHub リポジトリを Vercel に連携
+2. Build Settings で `Root Directory` を `web` に設定
+3. Environment Variables（環境変数）に `.env.local` と同じ内容を登録
+4. Vercel のデプロイを実行
 
-```bash
-npx expo start --clear
-```
-
-QRコードをスマホでスキャン → アプリが起動します。
-
-> **注意**: PCを切るとアプリは動作しません。
+`vercel.json` により、`/api/cron/notify` が1時間ごとにスケジュール実行され、設定した時刻になったユーザーへプッシュ通知が送信されます。
 
 ---
 
-### 方法②：EAS Build（スタンドアロン / PC不要）
+## 🔒 管理者への昇格
 
-クラウドでビルドし、スマホに直接インストールします。**ビルド後はPC不要**で動作します。
+Supabase SQL Editor で以下のクエリを実行し、特定のアカウントのロールを `admin` に変更します。
 
-#### 初回セットアップ（1回だけ）
-
-```bash
-# EAS CLI インストール
-npm install -g eas-cli
-
-# Expo アカウントにログイン
-eas login
-
-# EAS プロジェクト初期化（すでに設定済みの場合は不要）
-eas build:configure --platform all
+```sql
+UPDATE user_profiles SET role = 'admin' WHERE id = '対象ユーザーのUUID';
 ```
 
-> Expoアカウントは [expo.dev/signup](https://expo.dev/signup) で無料作成できます。
-
-#### Android ビルド
-
-```bash
-eas build --platform android --profile preview
-```
-
-ビルド完了後（約5〜15分）、以下の方法で `.apk` を取得してインストール：
-
-1. ターミナルに表示されるダウンロードURLを開く
-2. または [expo.dev](https://expo.dev) のダッシュボードからダウンロード
-3. `.apk` ファイルをAndroid端末に転送しインストール
-
-> [!TIP]
-> Android端末の **設定 → セキュリティ → 不明なアプリのインストール** を許可する必要がある場合があります。
-
-#### iOS ビルド
-
-```bash
-eas build --platform ios --profile preview
-```
-
-> [!WARNING]
-> iOSビルドには **有料の Apple Developer Program（年額 $99）** への加入が必要です。
-
-#### コード更新後の再ビルド
-
-コードを変更した場合は、同じコマンドで再ビルドしてください：
-
-```bash
-eas build --platform android --profile preview
-```
-
-#### ビルドプロファイル一覧
-
-| プロファイル | 用途 |
-|---|---|
-| `preview` | テスト配布用（APK直接インストール） |
-| `production` | ストアリリース用（App Store / Google Play） |
-
----
-
-## 🏗️ アプリの仕組み
-
-### 日記作成フロー
-
-```
-メモ入力（例：「カレー食べた」）
-  ↓
-[AIで日記にする] ボタン
-  ↓
-AI が深掘り質問を生成（どこで？おいしかった？等）
-  ↓
-選択肢をタップ or 自由入力で回答
-  ↓
-メモ + 回答 + 現在時刻 をもとにAIが日記を生成
-  ↓
-AsyncStorage に保存
-```
-
-### 同日の日記がある場合
-
-```
-2回目以降の投稿時にダイアログ表示：
-├─ 「追記（マージ）」→ 既存メモ + 新メモを合わせて再整形
-├─ 「上書き」        → 既存を捨てて新規作成
-└─ 「キャンセル」    → 何もしない
-```
-
-### データモデル
-
-```typescript
-interface Diary {
-  id: string;           // ユニークID
-  date: string;         // YYYY-MM-DD（カレンダー用キー）
-  displayDate: string;  // 表示用日付（ja-JP）
-  originalText: string; // ユーザーの元メモ
-  formattedText: string;// AI整形後の日記
-  timestamp: number;    // タイムスタンプ
-}
-```
-
----
-
-## 🔧 今後の拡張案
-
-- [ ] 日記の削除・編集機能
-- [ ] ダークモード対応
-- [ ] AsyncStorage → SQLite への移行（データ量増加対策）
-- [ ] アプリアイコン・スプラッシュ画面のカスタマイズ
-- [ ] Web対応（GitHub Pages へのデプロイ）
+または、ユーザー作成時にメールアドレスが `gamingmokugyo@gmail.com` であれば、トリガーにより自動的に `admin` に設定されます。

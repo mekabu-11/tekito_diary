@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     let answersSection = "";
     if (answers?.length > 0) {
         answersSection = "\n\n【追加の詳細】\n" +
-            answers.filter((a: any) => a.answer.trim()).map((a: any) => `Q: ${a.question}\nA: ${a.answer}`).join("\n\n");
+            answers.filter((a: { question: string; answer: string }) => a.answer.trim()).map((a: { question: string; answer: string }) => `Q: ${a.question}\nA: ${a.answer}`).join("\n\n");
     }
 
     let prompt: string;
@@ -59,7 +59,8 @@ ${text}${answersSection}`;
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return NextResponse.json({ formatted: response.text() });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
