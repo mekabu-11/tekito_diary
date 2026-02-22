@@ -35,6 +35,8 @@ export default function DiaryPage() {
     const [displayName, setDisplayName] = useState("");
     const [pendingMode, setPendingMode] = useState<"new" | "merge" | "replace">("new");
     const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
+    const [showConflictModal, setShowConflictModal] = useState(false);
+    const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
     const dateKey = toDateKey(selectedDate);
 
     useEffect(() => {
@@ -76,21 +78,29 @@ export default function DiaryPage() {
 
     const handleSubmit = async () => {
         if (!text.trim()) return;
+        setIsLoading(true);
 
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            setIsLoading(false);
+            return;
+        }
 
         const { data: existing } = await supabase
-            .from("diaries").select("*").eq("user_id", user.id).eq("date", dateKey).single();
+            .from("diaries").select("*").eq("user_id", user.id).eq("date", dateKey).maybeSingle();
 
         if (existing) {
-            const choice = window.confirm("この日の日記が既にあります。\nOK = 追記（マージ）\nキャンセル = 上書き");
-            setPendingExisting(existing);
-            setPendingMode(choice ? "merge" : "replace");
+            setIsLoading(false);
+            setConflictData(existing);
+            setShowConflictModal(true);
         } else {
-            setPendingExisting(null);
-            setPendingMode("new");
+            startGeneration("new", null);
         }
+    };
+
+    const startGeneration = async (mode: "new" | "merge" | "replace", existing: { id: string; original_text: string } | null) => {
+        setPendingMode(mode);
+        setPendingExisting(existing);
 
         // 深掘り質問生成
         setIsLoading(true);
@@ -106,20 +116,27 @@ export default function DiaryPage() {
                 setQuestions(data.questions);
                 setShowFollowUp(true);
             } else {
-                await finalizeDiary(undefined);
+                await finalizeDiary(undefined, mode, existing);
             }
         } catch {
-            await finalizeDiary(undefined);
+            await finalizeDiary(undefined, mode, existing);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const finalizeDiary = async (answers?: { question: string; answer: string }[]) => {
+    const finalizeDiary = async (
+        answers?: { question: string; answer: string }[],
+        modeFallback?: "new" | "merge" | "replace",
+        existingFallback?: { id: string; original_text: string } | null
+    ) => {
         setIsGenerating(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+
+            const mode = modeFallback !== undefined ? modeFallback : pendingMode;
+            const existingRec = existingFallback !== undefined ? existingFallback : pendingExisting;
 
             const now = new Date();
             const currentTime = `${now.getHours()}時${now.getMinutes()}分`;
@@ -132,24 +149,24 @@ export default function DiaryPage() {
                     text,
                     currentTime,
                     answers,
-                    existingText: pendingMode === "merge" ? pendingExisting?.original_text : undefined,
+                    existingText: mode === "merge" ? existingRec?.original_text : undefined,
                     userContext,
                 }),
             });
             const data = await res.json();
             if (!data.formatted) throw new Error(data.error || "整形に失敗しました");
 
-            const originalText = pendingMode === "merge" && pendingExisting
-                ? pendingExisting.original_text + "\n" + text
+            const originalText = mode === "merge" && existingRec
+                ? existingRec.original_text + "\n" + text
                 : text;
 
-            if (pendingExisting) {
+            if (existingRec) {
                 await supabase.from("diaries").update({
                     original_text: originalText,
                     formatted_text: data.formatted,
                     display_date: toDisplayDate(selectedDate),
                     updated_at: new Date().toISOString(),
-                }).eq("id", pendingExisting.id);
+                }).eq("id", existingRec.id);
             } else {
                 await supabase.from("diaries").insert({
                     user_id: user.id,
@@ -270,6 +287,27 @@ export default function DiaryPage() {
                     onCancel={() => setShowFollowUp(false)}
                     isLoading={isGenerating}
                 />
+            )}
+
+            {/* Conflict Modal */}
+            {showConflictModal && conflictData && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl text-center space-y-4">
+                        <h3 className="text-lg font-bold text-gray-900">この日の日記が既にあります</h3>
+                        <p className="text-sm text-gray-500">どうしますか？</p>
+                        <div className="space-y-2 pt-2">
+                            <button onClick={() => { setShowConflictModal(false); startGeneration("merge", conflictData); }} className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition">
+                                追記する（マージ）
+                            </button>
+                            <button onClick={() => { setShowConflictModal(false); startGeneration("replace", conflictData); }} className="w-full py-3 rounded-xl border-2 border-red-100 text-red-500 font-bold text-sm hover:bg-red-50 transition">
+                                上書きする
+                            </button>
+                            <button onClick={() => setShowConflictModal(false)} className="w-full py-2 text-gray-500 font-semibold text-sm hover:bg-gray-50 rounded-xl transition">
+                                やめる（キャンセル）
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

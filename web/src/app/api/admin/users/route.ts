@@ -1,6 +1,8 @@
 import { createAdminSupabase, createServerSupabaseFromRequest } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 // NextRequest を受け取り、クッキーから直接セッションを読む（Forbidden回避）
 async function checkAdmin(request: NextRequest) {
     const supabase = createServerSupabaseFromRequest(request);
