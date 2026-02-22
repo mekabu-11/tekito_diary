@@ -43,15 +43,11 @@ export default function DiaryPage() {
     }, []);
 
     const checkAdmin = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        // メールアドレスをフォールバックとして表示
-        setDisplayName(user.email || "");
-        const { data, error } = await supabase.from("user_profiles").select("role, display_name").eq("id", user.id).single();
-        if (!error && data) {
-            setIsAdmin(data.role === "admin");
-            if (data.display_name) setDisplayName(data.display_name);
-        }
+        const res = await fetch("/api/auth/profile");
+        if (!res.ok) return;
+        const data = await res.json();
+        setDisplayName(data.displayName || data.email || "");
+        setIsAdmin(data.isAdmin === true);
     };
 
     const getUserContext = async () => {
