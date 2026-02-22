@@ -100,3 +100,28 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- ============================================
+-- PWA プッシュ通知購読テーブル
+-- 既存のDBに追加する場合は以下だけ実行してください
+-- ============================================
+
+create table if not exists notification_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references user_profiles(id) on delete cascade not null,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  notify_hour int not null default 21,
+  notify_minute int not null default 0,
+  created_at timestamptz default now(),
+  unique(user_id)
+);
+
+alter table notification_subscriptions enable row level security;
+
+-- ユーザーは自分の購読情報のみ操作可能
+create policy "Users can manage own notification subscription"
+  on notification_subscriptions
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

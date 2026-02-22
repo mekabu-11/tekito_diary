@@ -2,8 +2,9 @@
 export const dynamic = "force-dynamic";
 
 import FollowUpForm from "@/components/FollowUpForm";
+import NotificationSettings from "@/components/NotificationSettings";
 import { createClient } from "@/lib/supabase";
-import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
+import { Bell, Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -35,6 +36,7 @@ export default function DiaryPage() {
     const [displayName, setDisplayName] = useState("");
     const [pendingMode, setPendingMode] = useState<"new" | "merge" | "replace">("new");
     const [pendingExisting, setPendingExisting] = useState<any>(null);
+    const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
     const dateKey = toDateKey(selectedDate);
 
@@ -209,6 +211,9 @@ export default function DiaryPage() {
                             <Shield size={18} className="text-amber-500" />
                         </button>
                     )}
+                    <button onClick={() => setShowNotificationSettings(true)} className="p-2 rounded-lg hover:bg-emerald-50 transition" title="通知設定">
+                        <Bell size={18} className="text-emerald-500" />
+                    </button>
                     <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-gray-100 transition">
                         <LogOut size={18} className="text-gray-500" />
                     </button>
@@ -270,6 +275,9 @@ export default function DiaryPage() {
                     onCancel={() => setShowFollowUp(false)}
                     isLoading={isGenerating}
                 />
+            )}
+            {showNotificationSettings && (
+                <NotificationSettings onClose={() => setShowNotificationSettings(false)} />
             )}
         </div>
     );

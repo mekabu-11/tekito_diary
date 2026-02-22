@@ -1,9 +1,9 @@
-import { createAdminSupabase, createServerSupabase } from "@/lib/supabase-server";
+import { createAdminSupabase, createServerSupabaseFromRequest } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
-// adminClientを使ってRLSをバイパスしてadmin確認
-async function checkAdmin() {
-    const supabase = await createServerSupabase();
+// NextRequest を受け取り、クッキーから直接セッションを読む（Forbidden回避）
+async function checkAdmin(request: NextRequest) {
+    const supabase = createServerSupabaseFromRequest(request);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
@@ -17,8 +17,8 @@ async function checkAdmin() {
 }
 
 // ユーザー一覧取得
-export async function GET() {
-    const admin = await checkAdmin();
+export async function GET(request: NextRequest) {
+    const admin = await checkAdmin(request);
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const adminSupa = await createAdminSupabase();
@@ -41,7 +41,7 @@ export async function GET() {
 
 // ユーザー作成
 export async function POST(request: NextRequest) {
-    const admin = await checkAdmin();
+    const admin = await checkAdmin(request);
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { email, password, displayName } = await request.json();
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
 // ユーザー削除
 export async function DELETE(request: NextRequest) {
-    const admin = await checkAdmin();
+    const admin = await checkAdmin(request);
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { userId } = await request.json();
@@ -83,7 +83,7 @@ export async function DELETE(request: NextRequest) {
 
 // ユーザー更新（メール・表示名・ロール）
 export async function PATCH(request: NextRequest) {
-    const admin = await checkAdmin();
+    const admin = await checkAdmin(request);
     if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { userId, displayName, role, email } = await request.json();
