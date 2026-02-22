@@ -37,7 +37,7 @@ export default function DiaryPage() {
     const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
     const [showConflictModal, setShowConflictModal] = useState(false);
     const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
-    const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+    const [selectedModel, setSelectedModel] = useState("gpt-5-mini");
     const dateKey = toDateKey(selectedDate);
 
     useEffect(() => {
@@ -231,7 +231,7 @@ export default function DiaryPage() {
                                 onChange={(e) => setSelectedModel(e.target.value)}
                                 className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 outline-none"
                             >
-                                <option value="gpt-4o-mini">gpt-mini</option>
+                                <option value="gpt-5-mini">gpt-mini</option>
                                 <option value="gpt-5-nano">gpt-nano</option>
                             </select>
                             <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">

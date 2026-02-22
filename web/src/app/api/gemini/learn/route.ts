@@ -39,7 +39,7 @@ ${originalMemo}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: model || "gpt-4o-mini",
+            model: model || "gpt-5-mini",
             messages: [{ role: "user", content: prompt }],
         });
         const raw = (result.choices[0].message.content || "").trim();
