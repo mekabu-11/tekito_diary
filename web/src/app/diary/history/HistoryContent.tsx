@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, Edit3, Loader2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
@@ -25,6 +25,9 @@ export default function HistoryContent() {
     const [diaryDates, setDiaryDates] = useState<Set<string>>(new Set());
     const [selectedDate, setSelectedDate] = useState<string>(initialDate || "");
     const [selectedDiary, setSelectedDiary] = useState<Diary | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editText, setEditText] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         loadDiaries();
@@ -59,6 +62,38 @@ export default function HistoryContent() {
         setSelectedDate(key);
         const found = diaries.find((d) => d.date === key);
         setSelectedDiary(found || null);
+        setIsEditing(false);
+    };
+
+    const startEditing = () => {
+        if (!selectedDiary) return;
+        setEditText(selectedDiary.formatted_text);
+        setIsEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setIsEditing(false);
+        setEditText("");
+    };
+
+    const saveEdit = async () => {
+        if (!selectedDiary) return;
+        setIsSaving(true);
+        const { error } = await supabase
+            .from("diaries")
+            .update({
+                formatted_text: editText,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", selectedDiary.id);
+
+        if (!error) {
+            const updated = { ...selectedDiary, formatted_text: editText };
+            setSelectedDiary(updated);
+            setDiaries((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+            setIsEditing(false);
+        }
+        setIsSaving(false);
     };
 
     const tileContent = ({ date, view }: { date: Date; view: string }) => {
@@ -94,10 +129,49 @@ export default function HistoryContent() {
                     <div className="bg-white rounded-2xl shadow-sm p-5">
                         {selectedDiary ? (
                             <>
-                                <p className="text-xs text-gray-400 font-semibold mb-2">{selectedDiary.display_date}</p>
-                                <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                                    {selectedDiary.formatted_text}
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs text-gray-400 font-semibold">{selectedDiary.display_date}</p>
+                                    {!isEditing ? (
+                                        <button
+                                            onClick={startEditing}
+                                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition"
+                                        >
+                                            <Edit3 size={13} />
+                                            編集
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                onClick={saveEdit}
+                                                disabled={isSaving}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition disabled:opacity-50"
+                                            >
+                                                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                                保存
+                                            </button>
+                                            <button
+                                                onClick={cancelEditing}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
+                                            >
+                                                <X size={13} />
+                                                取消
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
+
+                                {isEditing ? (
+                                    <textarea
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        className="w-full min-h-[200px] p-3 text-sm text-gray-800 leading-relaxed rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                                    />
+                                ) : (
+                                    <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                        {selectedDiary.formatted_text}
+                                    </div>
+                                )}
+
                                 <div className="mt-4 pt-3 border-t border-gray-100">
                                     <p className="text-xs text-gray-400 font-semibold mb-1">元のメモ</p>
                                     <p className="text-xs text-gray-500 whitespace-pre-wrap">{selectedDiary.original_text}</p>
