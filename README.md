@@ -94,8 +94,8 @@ NEXT_PUBLIC_SUPABASE_URL=あなたのSupabaseのURL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=あなたのSupabaseのanonキー
 SUPABASE_SERVICE_ROLE_KEY=あなたのSupabaseのservice_roleキー
 
-# Gemini API
-GEMINI_API_KEY=あなたのGemini APIキー
+# OpenAI API
+OPENAI_API_KEY=あなたのOpenAI APIキー
 
 # Web Push Notifications
 VAPID_EMAIL=mailto:あなたのメールアドレス

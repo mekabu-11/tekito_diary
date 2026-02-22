@@ -1,9 +1,8 @@
 import { createServerSupabase } from "@/lib/supabase-server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 export async function POST(request: NextRequest) {
     const supabase = await createServerSupabase();
@@ -33,9 +32,11 @@ ${userContext || ""}
 ${text}`;
 
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const raw = response.text().trim();
+        const result = await openai.chat.completions.create({
+            model: "gpt-5-nano",
+            messages: [{ role: "user", content: prompt }],
+        });
+        const raw = (result.choices[0].message.content || "").trim();
         const jsonMatch = raw.match(/\[[\s\S]*\]/);
         const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
         return NextResponse.json({ questions: questions.slice(0, 5) });
