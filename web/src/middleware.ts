@@ -48,6 +48,9 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
+    // ブラウザキャッシュを無効化（戻るボタンでキャッシュから表示されるのを防ぐ）
+    supabaseResponse.headers.set('Cache-Control', 'no-store');
+
     return supabaseResponse;
 }
 
