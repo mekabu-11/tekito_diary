@@ -32,6 +32,7 @@ export default function DiaryPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [displayName, setDisplayName] = useState("");
     const [pendingMode, setPendingMode] = useState<"new" | "merge" | "replace">("new");
     const [pendingExisting, setPendingExisting] = useState<any>(null);
 
@@ -44,8 +45,13 @@ export default function DiaryPage() {
     const checkAdmin = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        const { data } = await supabase.from("user_profiles").select("role").eq("id", user.id).single();
-        setIsAdmin(data?.role === "admin");
+        // メールアドレスをフォールバックとして表示
+        setDisplayName(user.email?.split("@")[0] || "");
+        const { data, error } = await supabase.from("user_profiles").select("role, display_name").eq("id", user.id).single();
+        if (!error && data) {
+            setIsAdmin(data.role === "admin");
+            if (data.display_name) setDisplayName(data.display_name);
+        }
     };
 
     const getUserContext = async () => {
@@ -199,9 +205,12 @@ export default function DiaryPage() {
             <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
                 <h1 className="text-lg font-extrabold text-gray-900">てきとー日記</h1>
                 <div className="flex items-center gap-2">
+                    {displayName && (
+                        <span className="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-50 rounded-lg">{displayName}</span>
+                    )}
                     {isAdmin && (
-                        <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-gray-100 transition">
-                            <Shield size={18} className="text-gray-500" />
+                        <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
+                            <Shield size={18} className="text-amber-500" />
                         </button>
                     )}
                     <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-gray-100 transition">
