@@ -31,12 +31,10 @@ export default function AdminPage() {
     }, []);
 
     const checkAdminAndLoad = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { router.push("/login"); return; }
-
-        const { data } = await supabase.from("user_profiles").select("role").eq("id", user.id).single();
-        if (data?.role !== "admin") { router.push("/diary"); return; }
-
+        const res = await fetch("/api/auth/profile");
+        if (!res.ok) { router.push("/login"); return; }
+        const profile = await res.json();
+        if (!profile.isAdmin) { router.push("/diary"); return; }
         await loadUsers();
     };
 
