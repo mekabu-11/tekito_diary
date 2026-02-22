@@ -1,6 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase-server";
-import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
@@ -39,7 +39,7 @@ ${originalMemo}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: "gpt-5-nano",
+            model: "gpt-5-mini",
             messages: [{ role: "user", content: prompt }],
         });
         const raw = (result.choices[0].message.content || "").trim();

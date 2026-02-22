@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
         return {
             id: u.id,
             email: u.email,
-            created_at: u.created_at,
-            display_name: profile?.display_name || "",
+            createdAt: u.created_at,
+            displayName: profile?.display_name || "",
             role: profile?.role || "user",
         };
     });
