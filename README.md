@@ -1,6 +1,6 @@
 # 📖 てきとー日記 (Tekito Diary)
 
-「今日あったこと」を適当に書くだけで、AIが綺麗な日記に整形してくれるスマホアプリ。
+「今日あったこと」を適当に書くだけで、AIが深掘り質問をして濃い日記に仕上げてくれるスマホアプリ。
 
 ---
 
@@ -8,12 +8,15 @@
 
 | 機能 | 説明 |
 |---|---|
-| **フリーテキスト入力** | 箇条書きやメモ書きなど、自由な形式で「今日あったこと」を入力 |
-| **AI整形 (Gemini)** | 入力テキストをGemini APIで自然な日記文体に自動変換 |
-| **トーン選択** | 「事実（綺麗に）」と「Z世代（フランク）」の2種類から出力スタイルを選択 |
+| **フリーテキスト入力** | 箇条書き・メモ書きなど自由な形式で入力 |
+| **AI深掘り質問** | メモの抽象度に応じて2〜5個の質問を自動生成。選択肢タップ or 自由入力で回答 |
+| **AI日記整形 (Gemini)** | メモ＋回答をもとに、事実ベースで読みやすい日記を自動生成 |
+| **時間帯推測** | 入力時刻から「朝」「夜」など時間帯を自然に文章に反映 |
+| **日付選択** | 今日以外の日付の日記も書ける（◀ ▶ で日付移動） |
+| **同日マージ/上書き** | 同じ日に複数回書く場合、追記（マージ）か上書き（削除して新規）を選択可能 |
+| **カレンダー履歴** | 日本語カレンダーで過去の日記を閲覧。日記がある日は紫のドットで表示 |
 | **ローカル保存** | 整形された日記をAsyncStorageでデバイス内に永続保存 |
-| **履歴閲覧** | 過去に保存した日記を一覧画面で確認 |
-| **リマインド通知** | 毎日0時にローカル通知で日記の記入をリマインド |
+| **リマインド通知** | 毎日0時にローカル通知で日記の記入をリマインド（実機のみ） |
 
 ---
 
@@ -24,9 +27,10 @@
 | フレームワーク | React Native (Expo SDK 54) |
 | 言語 | TypeScript |
 | ルーティング | Expo Router (ファイルベース) |
-| AI API | Google Gemini 1.5 Pro (`@google/generative-ai`) |
+| AI API | Google Gemini (`@google/generative-ai`) |
 | ローカル保存 | `@react-native-async-storage/async-storage` |
-| プッシュ通知 | `expo-notifications` (ローカル通知) |
+| カレンダー | `react-native-calendars` |
+| 通知 | `expo-notifications`（ローカル通知） |
 | アイコン | `lucide-react-native` |
 
 ---
@@ -35,141 +39,175 @@
 
 ```
 tekito_diary/
-├── app/                          # Expo Router 画面定義
+├── app/                          # 画面
 │   ├── _layout.tsx               # ルートレイアウト (Stack + 通知初期化)
-│   ├── index.tsx                 # ホーム画面 (入力 → AI変換 → 保存)
-│   └── history.tsx               # 過去の日記一覧画面
-├── components/                   # 再利用UIコンポーネント
-│   ├── ToneSelector.tsx          # トーン選択トグル
-│   └── DiaryCard.tsx             # 日記表示カード
-├── services/                     # ビジネスロジック層
-│   ├── gemini.ts                 # Gemini API連携・プロンプト構築
-│   ├── storage.ts                # AsyncStorage CRUD操作
-│   └── notification.ts           # ローカル通知のセットアップ
-├── .env                          # 環境変数 (APIキー)
+│   ├── index.tsx                 # ホーム (入力・日付選択・深掘り質問・AI変換)
+│   └── history.tsx               # カレンダー日記閲覧
+├── components/
+│   ├── DiaryCard.tsx             # 日記表示カード
+│   └── FollowUpForm.tsx          # AI深掘り質問フォーム（選択肢 + 自由入力）
+├── services/
+│   ├── gemini.ts                 # Gemini API（質問生成 + 日記整形）
+│   ├── storage.ts                # AsyncStorage CRUD
+│   └── notification.ts           # ローカル通知スケジュール
+├── .env                          # 環境変数（APIキー）
 ├── app.json                      # Expo設定
-├── package.json                  # npm設定・依存パッケージ
-└── tsconfig.json                 # TypeScript設定
+├── eas.json                      # EAS Build設定
+└── package.json
 ```
 
 ---
 
-## 🚀 環境構築・セットアップ
+## 🚀 環境構築
 
 ### 前提条件
 
 - **Node.js** v20以上
-- **npm** (Node.jsに同梱) または **yarn**
-- **Expo Go アプリ** (実機テスト用：[iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
-- **Google Gemini APIキー** ([Google AI Studio](https://aistudio.google.com/apikey) で取得)
+- **npm**
+- **Google Gemini APIキー**（[Google AI Studio](https://aistudio.google.com/apikey) で無料取得）
 
-### 手順
-
-#### 1. リポジトリのクローンと依存パッケージのインストール
+### セットアップ
 
 ```bash
+# 1. クローン
 git clone https://github.com/your-username/tekito_diary.git
 cd tekito_diary
+
+# 2. パッケージインストール
 npm install
-```
 
-#### 2. 環境変数の設定
-
-プロジェクトルートの `.env` ファイルを開き、取得したGemini APIキーを設定します。
-
-```env
+# 3. APIキー設定
+# .env ファイルを編集:
 EXPO_PUBLIC_GEMINI_API_KEY=ここにあなたのAPIキーを貼り付け
 ```
 
 > [!CAUTION]
 > `.env` ファイルは `.gitignore` に含まれています。APIキーを絶対にGitにコミットしないでください。
 
-#### 3. 開発サーバーの起動
+---
+
+## 📱 アプリの起動・ビルド方法
+
+### 方法①：Expo Go（開発用 / PCが必要）
+
+PCで開発サーバーを起動し、スマホのExpo Goアプリで接続します。
 
 ```bash
-npx expo start
+npx expo start --clear
 ```
 
-起動後、以下のいずれかの方法でアプリを開きます：
+QRコードをスマホでスキャン → アプリが起動します。
 
-| 方法 | 操作 |
-|---|---|
-| **実機 (推奨)** | 表示されるQRコードをExpo Goアプリでスキャン |
-| **iOS Simulator** | ターミナルで `i` キーを押下 |
-| **Android Emulator** | ターミナルで `a` キーを押下 |
-
-> [!NOTE]
-> ローカル通知機能は **実機でのみ** 動作します。Simulatorでは通知のテストができません。
+> **注意**: PCを切るとアプリは動作しません。
 
 ---
 
-## 🏗️ アーキテクチャ設計
+### 方法②：EAS Build（スタンドアロン / PC不要）
 
-### レイヤー構成
+クラウドでビルドし、スマホに直接インストールします。**ビルド後はPC不要**で動作します。
 
-```
-  画面 (app/)  →  コンポーネント (components/)  →  サービス (services/)
-```
+#### 初回セットアップ（1回だけ）
 
-- **画面層 (`app/`)**: ユーザー操作を受け付け、サービス層を呼び出す
-- **コンポーネント層 (`components/`)**: 再利用可能なUI部品。状態を持たず、propsで制御
-- **サービス層 (`services/`)**: 外部API通信・データ永続化・通知スケジューリングなどの純粋ロジック
+```bash
+# EAS CLI インストール
+npm install -g eas-cli
 
-### データフロー
+# Expo アカウントにログイン
+eas login
 
-```mermaid
-sequenceDiagram
-    participant U as ユーザー
-    participant H as index.tsx
-    participant G as gemini.ts
-    participant S as storage.ts
-
-    U->>H: テキスト入力 + トーン選択
-    H->>G: formatDiaryText(text, tone)
-    G-->>H: 整形済みテキスト
-    H->>S: saveDiary(diary)
-    S-->>H: 保存完了
-    H->>U: 成功アラート表示
+# EAS プロジェクト初期化（すでに設定済みの場合は不要）
+eas build:configure --platform all
 ```
 
-### データモデル (`Diary`)
+> Expoアカウントは [expo.dev/signup](https://expo.dev/signup) で無料作成できます。
+
+#### Android ビルド
+
+```bash
+eas build --platform android --profile preview
+```
+
+ビルド完了後（約5〜15分）、以下の方法で `.apk` を取得してインストール：
+
+1. ターミナルに表示されるダウンロードURLを開く
+2. または [expo.dev](https://expo.dev) のダッシュボードからダウンロード
+3. `.apk` ファイルをAndroid端末に転送しインストール
+
+> [!TIP]
+> Android端末の **設定 → セキュリティ → 不明なアプリのインストール** を許可する必要がある場合があります。
+
+#### iOS ビルド
+
+```bash
+eas build --platform ios --profile preview
+```
+
+> [!WARNING]
+> iOSビルドには **有料の Apple Developer Program（年額 $99）** への加入が必要です。
+
+#### コード更新後の再ビルド
+
+コードを変更した場合は、同じコマンドで再ビルドしてください：
+
+```bash
+eas build --platform android --profile preview
+```
+
+#### ビルドプロファイル一覧
+
+| プロファイル | 用途 |
+|---|---|
+| `preview` | テスト配布用（APK直接インストール） |
+| `production` | ストアリリース用（App Store / Google Play） |
+
+---
+
+## 🏗️ アプリの仕組み
+
+### 日記作成フロー
+
+```
+メモ入力（例：「カレー食べた」）
+  ↓
+[AIで日記にする] ボタン
+  ↓
+AI が深掘り質問を生成（どこで？おいしかった？等）
+  ↓
+選択肢をタップ or 自由入力で回答
+  ↓
+メモ + 回答 + 現在時刻 をもとにAIが日記を生成
+  ↓
+AsyncStorage に保存
+```
+
+### 同日の日記がある場合
+
+```
+2回目以降の投稿時にダイアログ表示：
+├─ 「追記（マージ）」→ 既存メモ + 新メモを合わせて再整形
+├─ 「上書き」        → 既存を捨てて新規作成
+└─ 「キャンセル」    → 何もしない
+```
+
+### データモデル
 
 ```typescript
 interface Diary {
-  id: string;           // ユニークID (Date.now())
-  date: string;         // 表示用日付 (ja-JP形式)
-  originalText: string; // ユーザーの元テキスト
-  formattedText: string;// AI整形後のテキスト
-  tone: 'fact' | 'genz';// 選択トーン
-  timestamp: number;    // ソート用タイムスタンプ
+  id: string;           // ユニークID
+  date: string;         // YYYY-MM-DD（カレンダー用キー）
+  displayDate: string;  // 表示用日付（ja-JP）
+  originalText: string; // ユーザーの元メモ
+  formattedText: string;// AI整形後の日記
+  timestamp: number;    // タイムスタンプ
 }
 ```
-
----
-
-## 📝 各ファイルの役割
-
-### `services/gemini.ts`
-Gemini 1.5 Pro に対してトーン別のプロンプトを送信し、整形された日記テキストを返却する。APIキー未設定時はエラーを投げる安全設計。
-
-### `services/storage.ts`
-AsyncStorageを使い、日記のCRUD操作を提供。新しい日記は配列の先頭に挿入され、最新順で保存される。
-
-### `services/notification.ts`
-アプリ起動時に通知権限を取得し、毎日0:00にリマインド通知をスケジュール。Android用の通知チャンネル設定も実装済み。
-
-### `components/ToneSelector.tsx`
-iOS風セグメントコントロールUIで2つのトーンを切り替えるトグル。
-
-### `components/DiaryCard.tsx`
-履歴画面で各日記を表示するカード。トーンバッジ、整形テキスト、元メモの折りたたみ表示を含む。
 
 ---
 
 ## 🔧 今後の拡張案
 
 - [ ] 日記の削除・編集機能
-- [ ] カレンダーUIからの日付別閲覧
 - [ ] ダークモード対応
 - [ ] AsyncStorage → SQLite への移行（データ量増加対策）
 - [ ] アプリアイコン・スプラッシュ画面のカスタマイズ
+- [ ] Web対応（GitHub Pages へのデプロイ）
