@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FollowUpForm } from '../components/FollowUpForm';
-import { FollowUpQuestion, formatDiaryText, generateFollowUpQuestions } from '../services/gemini';
+import { FollowUpQuestion, formatDiaryText, generateFollowUpQuestions, learnFromDiary } from '../services/gemini';
 import { getDiaryByDate, saveDiary, updateDiary } from '../services/storage';
 
 const toDateKey = (d: Date) =>
@@ -175,6 +175,9 @@ export default function Home() {
             await saveDiary(diary);
         }
         setText('');
+
+        // バックグラウンドでユーザー情報を学習（結果は待たない）
+        learnFromDiary(diary.formattedText, originalText, targetDateKey);
 
         // 保存後、その日付の日記に自動遷移
         router.push(`/history?date=${targetDateKey}`);
