@@ -5,7 +5,7 @@ import FollowUpForm from "@/components/FollowUpForm";
 import { createClient } from "@/lib/supabase";
 import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const toDateKey = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -38,6 +38,8 @@ export default function DiaryPage() {
     const [showConflictModal, setShowConflictModal] = useState(false);
     const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
     const [selectedModel, setSelectedModel] = useState("gpt-5-mini");
+    const [isPageLoading, setIsPageLoading] = useState(true);
+    const cachedUserContextRef = useRef<string>("");
     const dateKey = toDateKey(selectedDate);
 
     useEffect(() => {
@@ -45,19 +47,25 @@ export default function DiaryPage() {
     }, []);
 
     const checkAdmin = async () => {
-        const res = await fetch("/api/auth/profile");
-        if (!res.ok) return;
-        const data = await res.json();
-        setDisplayName(data.displayName || data.email || "");
-        setIsAdmin(data.isAdmin === true);
+        try {
+            const res = await fetch("/api/auth/profile");
+            if (!res.ok) return;
+            const data = await res.json();
+            setDisplayName(data.displayName || data.email || "");
+            setIsAdmin(data.isAdmin === true);
+        } finally {
+            setIsPageLoading(false);
+        }
     };
 
     const getUserContext = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return "";
 
-        const { data: profile } = await supabase.from("core_profiles").select("*").eq("user_id", user.id).single();
-        const { data: episodes } = await supabase.from("episodes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+        const [{ data: profile }, { data: episodes }] = await Promise.all([
+            supabase.from("core_profiles").select("*").eq("user_id", user.id).single(),
+            supabase.from("episodes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
+        ]);
 
         const parts: string[] = [];
         if (profile) {
@@ -107,6 +115,7 @@ export default function DiaryPage() {
         setIsLoading(true);
         try {
             const userContext = await getUserContext();
+            cachedUserContextRef.current = userContext;
             const res = await fetch("/api/gemini/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -141,7 +150,8 @@ export default function DiaryPage() {
 
             const now = new Date();
             const currentTime = `${now.getHours()}時${now.getMinutes()}分`;
-            const userContext = await getUserContext();
+            const userContext = cachedUserContextRef.current || await getUserContext();
+            cachedUserContextRef.current = "";
 
             const res = await fetch("/api/gemini/format", {
                 method: "POST",
@@ -221,7 +231,9 @@ export default function DiaryPage() {
             <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
                 <h1 className="text-lg font-extrabold text-gray-900">てきとー日記</h1>
                 <div className="flex items-center gap-2">
-                    {displayName && (
+                    {isPageLoading ? (
+                        <Loader2 size={16} className="animate-spin text-gray-300" />
+                    ) : displayName && (
                         <span className="text-xs text-gray-500 font-medium px-2 py-1 bg-gray-50 rounded-lg">{displayName}</span>
                     )}
                     {isAdmin && (
@@ -233,6 +245,8 @@ export default function DiaryPage() {
                             >
                                 <option value="gpt-5-mini">gpt-mini</option>
                                 <option value="gpt-5-nano">gpt-nano</option>
+                                <option value="gpt-5.1">gpt-5.1</option>
+                                <option value="gpt-5.1-chat-latest">gpt-5.1-latest</option>
                             </select>
                             <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
                                 <Shield size={18} className="text-amber-500" />

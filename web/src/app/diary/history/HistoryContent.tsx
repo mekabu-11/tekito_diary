@@ -28,28 +28,37 @@ export default function HistoryContent() {
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadDiaries = useCallback(async () => {
+        setIsLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            setIsLoading(false);
+            return;
+        }
 
-        const { data } = await supabase
-            .from("diaries")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("date", { ascending: false });
+        try {
+            const { data } = await supabase
+                .from("diaries")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("date", { ascending: false });
 
-        if (data) {
-            setDiaries(data);
-            setDiaryDates(new Set(data.map((d) => d.date)));
+            if (data) {
+                setDiaries(data);
+                setDiaryDates(new Set(data.map((d) => d.date)));
 
-            if (initialDate) {
-                const found = data.find((d) => d.date === initialDate);
-                if (found) {
-                    setSelectedDate(initialDate);
-                    setSelectedDiary(found);
+                if (initialDate) {
+                    const found = data.find((d) => d.date === initialDate);
+                    if (found) {
+                        setSelectedDate(initialDate);
+                        setSelectedDiary(found);
+                    }
                 }
             }
+        } finally {
+            setIsLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialDate]); // We don't want to re-run this on every supabase instance change
@@ -116,6 +125,11 @@ export default function HistoryContent() {
             </header>
 
             <div className="max-w-lg mx-auto p-4 space-y-4">
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <Loader2 size={32} className="animate-spin text-emerald-500" />
+                    </div>
+                ) : (<>
                 <div className="bg-white rounded-2xl shadow-sm p-4 calendar-wrapper">
                     <Calendar
                         onClickDay={handleDateClick}
@@ -185,6 +199,7 @@ export default function HistoryContent() {
                         )}
                     </div>
                 )}
+                </>)}
             </div>
         </div>
     );
