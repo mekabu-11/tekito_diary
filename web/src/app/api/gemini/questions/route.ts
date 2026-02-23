@@ -1,3 +1,4 @@
+import { ALLOWED_MODELS, DEFAULT_MODEL } from "@/lib/models";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -11,34 +12,42 @@ export async function POST(request: NextRequest) {
 
     const { text, userContext, model } = await request.json();
 
-    const prompt = `以下のメモを読んで、日記をより具体的にするための深掘り質問を生成してください。
+    if (!text || typeof text !== "string" || text.length > 10000) {
+        return NextResponse.json({ error: "Invalid text" }, { status: 400 });
+    }
+    if (model && !ALLOWED_MODELS.includes(model)) {
+        return NextResponse.json({ error: "Invalid model" }, { status: 400 });
+    }
 
-重要なルール：
-- メモが抽象的・短い場合（例：「カレー食べた」）→ 質問を4〜5個生成して深掘りする
-- メモがそこそこ具体的な場合 → 質問を2〜3個にする
-- メモがすでに十分詳しい場合 → 質問は0〜1個でよい（空配列[]でもOK）
-- メモの内容から自然に膨らませられるポイント（場所、感想、誰と、どうだった等）を質問にする
-${userContext || ""}
-
-各質問には選択肢を3〜4つ付けてください。選択肢は短く自然なものにしてください。
-ユーザーについて知っていることがあれば、選択肢に反映させてください。
-
-必ず以下のJSON配列形式のみで回答してください：
-[{"question": "質問文", "choices": ["選択肢1", "選択肢2", "選択肢3"]}]
-
-質問が不要な場合は空配列を返してください：[]
-
-メモ：
-${text}`;
+    const systemPrompt = [
+        "あなたは日記の深掘りアシスタントです。ユーザーのメモから、日記をより具体的にするための質問をJSON形式で生成してください。",
+        "",
+        "重要なルール：",
+        "- メモが抽象的・短い場合（例：「カレー食べた」）→ questionsを4〜5個生成して深掘りする",
+        "- メモがそこそこ具体的な場合 → questionsを2〜3個にする",
+        "- メモがすでに十分詳しい場合 → questionsは0〜1個でよい（空配列でもOK）",
+        "- メモの内容から自然に膨らませられるポイント（場所、感想、誰と、どうだった等）を質問にする",
+        "- 各質問には選択肢を3〜4つ付けること。選択肢は短く自然なものにすること",
+        "- ユーザーについて知っていることがあれば、選択肢に反映させること",
+        userContext || "",
+        "",
+        '必ず以下のJSON形式のみで回答してください：{"questions":[{"question":"質問文","choices":["選択肢1","選択肢2","選択肢3"]}]}',
+        '質問が不要な場合：{"questions":[]}',
+    ].filter(Boolean).join("\n");
 
     try {
         const result = await openai.chat.completions.create({
-            model: model || "gpt-5-mini",
-            messages: [{ role: "user", content: prompt }],
+            model: model || DEFAULT_MODEL,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `メモ：\n${text}` },
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.7,
+            max_tokens: 800,
         });
-        const raw = (result.choices[0].message.content || "").trim();
-        const jsonMatch = raw.match(/\[[\s\S]*\]/);
-        const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        const parsed = JSON.parse(result.choices[0].message.content || "{}");
+        const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
         return NextResponse.json({ questions: questions.slice(0, 5) });
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
