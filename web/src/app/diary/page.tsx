@@ -1,6 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic";
+
 import FollowUpForm from "@/components/FollowUpForm";
-import { saveVersion } from "@/lib/diary-versions";
 import { createClient } from "@/lib/supabase";
 import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,9 +34,9 @@ export default function DiaryPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [displayName, setDisplayName] = useState("");
     const [pendingMode, setPendingMode] = useState<"new" | "merge" | "replace">("new");
-    const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string; formatted_text: string } | null>(null);
+    const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
     const [showConflictModal, setShowConflictModal] = useState(false);
-    const [conflictData, setConflictData] = useState<{ id: string; original_text: string; formatted_text: string } | null>(null);
+    const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
     const [selectedModel, setSelectedModel] = useState("gpt-5-mini");
     const [isPageLoading, setIsPageLoading] = useState(true);
     const cachedUserContextRef = useRef<string>("");
@@ -106,7 +107,7 @@ export default function DiaryPage() {
         }
     };
 
-    const startGeneration = async (mode: "new" | "merge" | "replace", existing: { id: string; original_text: string; formatted_text: string } | null) => {
+    const startGeneration = async (mode: "new" | "merge" | "replace", existing: { id: string; original_text: string } | null) => {
         setPendingMode(mode);
         setPendingExisting(existing);
 
@@ -115,15 +116,11 @@ export default function DiaryPage() {
         try {
             const userContext = await getUserContext();
             cachedUserContextRef.current = userContext;
-            const res = await fetch("/api/ai/questions", {
+            const res = await fetch("/api/gemini/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, userContext }),
+                body: JSON.stringify({ text, userContext, model: selectedModel }),
             });
-            if (!res.ok) {
-                await finalizeDiary(undefined, mode, existing);
-                return;
-            }
             const data = await res.json();
             if (data.questions?.length > 0) {
                 setQuestions(data.questions);
@@ -131,9 +128,8 @@ export default function DiaryPage() {
             } else {
                 await finalizeDiary(undefined, mode, existing);
             }
-        } catch (err) {
-            const message = err instanceof Error ? err.message : "通信エラーが発生しました";
-            alert(`質問生成中にエラーが発生しました: ${message}`);
+        } catch {
+            await finalizeDiary(undefined, mode, existing);
         } finally {
             setIsLoading(false);
         }
@@ -142,7 +138,7 @@ export default function DiaryPage() {
     const finalizeDiary = async (
         answers?: { question: string; answer: string }[],
         modeFallback?: "new" | "merge" | "replace",
-        existingFallback?: { id: string; original_text: string; formatted_text: string } | null
+        existingFallback?: { id: string; original_text: string } | null
     ) => {
         setIsGenerating(true);
         try {
@@ -157,7 +153,7 @@ export default function DiaryPage() {
             const userContext = cachedUserContextRef.current || await getUserContext();
             cachedUserContextRef.current = "";
 
-            const res = await fetch("/api/ai/format", {
+            const res = await fetch("/api/gemini/format", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -177,7 +173,6 @@ export default function DiaryPage() {
                 : text;
 
             if (existingRec) {
-                await saveVersion(supabase, existingRec.id, existingRec.formatted_text, existingRec.original_text);
                 await supabase.from("diaries").update({
                     original_text: originalText,
                     formatted_text: data.formatted,
@@ -196,7 +191,7 @@ export default function DiaryPage() {
 
             // バックグラウンドで学習
             const { data: profile } = await supabase.from("core_profiles").select("*").eq("user_id", user.id).single();
-            fetch("/api/ai/learn", {
+            fetch("/api/gemini/learn", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -204,6 +199,7 @@ export default function DiaryPage() {
                     originalMemo: text,
                     dateKey,
                     currentProfile: profile || {},
+                    model: selectedModel,
                 }),
             });
 
@@ -250,7 +246,7 @@ export default function DiaryPage() {
                                 <option value="gpt-5-mini">gpt-mini</option>
                                 <option value="gpt-5-nano">gpt-nano</option>
                                 <option value="gpt-5.1">gpt-5.1</option>
-                                <option value="gpt-5.1-chat-latest">gpt-5.1-chat</option>
+                                <option value="gpt-5.1-chat-latest">gpt-5.1-latest</option>
                             </select>
                             <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
                                 <Shield size={18} className="text-amber-500" />
@@ -263,58 +259,51 @@ export default function DiaryPage() {
                 </div>
             </header>
 
-            {isPageLoading ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-4">
-                    <Loader2 size={40} className="animate-spin text-emerald-500/50 mb-4" />
-                    <p className="text-sm font-bold text-gray-400">読み込み中...</p>
-                </div>
-            ) : (
-                <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
-                    {/* Date Selector */}
-                    <div className="flex items-center bg-white rounded-2xl p-3 shadow-sm">
-                        <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
-                            <ChevronLeft size={20} className="text-emerald-500" />
-                        </button>
-                        <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center">
-                            <p className="text-xl font-extrabold text-gray-900">{toDateLabel(selectedDate)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">{toDisplayDate(selectedDate)}</p>
-                        </button>
-                        <button onClick={() => shiftDate(1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
-                            <ChevronRight size={20} className="text-emerald-500" />
-                        </button>
-                    </div>
-
-                    {/* Input */}
-                    <div className="bg-white rounded-2xl shadow-sm p-1">
-                        <textarea
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            placeholder={"例：朝カフェでモーニング食べた\n昼は会議が3つもあってしんどかった\n帰りにコンビニでアイス買った"}
-                            className="w-full min-h-[200px] p-4 text-sm leading-relaxed rounded-2xl outline-none resize-none placeholder:text-gray-300"
-                            disabled={isLoading}
-                        />
-                    </div>
-
-                    {/* Submit */}
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isLoading || !text.trim()}
-                        className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
-                    >
-                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                        {isLoading ? "質問を生成中..." : "AIで日記にする"}
+            <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
+                {/* Date Selector */}
+                <div className="flex items-center bg-white rounded-2xl p-3 shadow-sm">
+                    <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+                        <ChevronLeft size={20} className="text-emerald-500" />
                     </button>
-
-                    {/* History */}
-                    <button
-                        onClick={() => router.push("/diary/history")}
-                        className="w-full py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm hover:bg-emerald-100 transition flex items-center justify-center gap-2"
-                    >
-                        <Calendar size={18} />
-                        カレンダーで日記を見る
+                    <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center">
+                        <p className="text-xl font-extrabold text-gray-900">{toDateLabel(selectedDate)}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{toDisplayDate(selectedDate)}</p>
+                    </button>
+                    <button onClick={() => shiftDate(1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+                        <ChevronRight size={20} className="text-emerald-500" />
                     </button>
                 </div>
-            )}
+
+                {/* Input */}
+                <div className="bg-white rounded-2xl shadow-sm p-1">
+                    <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder={"例：朝カフェでモーニング食べた\n昼は会議が3つもあってしんどかった\n帰りにコンビニでアイス買った"}
+                        className="w-full min-h-[200px] p-4 text-sm leading-relaxed rounded-2xl outline-none resize-none placeholder:text-gray-300"
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Submit */}
+                <button
+                    onClick={handleSubmit}
+                    disabled={isLoading || !text.trim()}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                >
+                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                    {isLoading ? "質問を生成中..." : "AIで日記にする"}
+                </button>
+
+                {/* History */}
+                <button
+                    onClick={() => router.push("/diary/history")}
+                    className="w-full py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm hover:bg-emerald-100 transition flex items-center justify-center gap-2"
+                >
+                    <Calendar size={18} />
+                    カレンダーで日記を見る
+                </button>
+            </div>
 
             {/* Follow-up modal */}
             {showFollowUp && (
