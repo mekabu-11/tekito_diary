@@ -36,6 +36,7 @@ export default function HistoryContent() {
     const [versions, setVersions] = useState<DiaryVersion[]>([]);
     const [showVersions, setShowVersions] = useState(false);
     const [isRestoringVersion, setIsRestoringVersion] = useState(false);
+    const [expandedVersionId, setExpandedVersionId] = useState<string | null>(null);
     const [isEditingMemo, setIsEditingMemo] = useState(false);
     const [editMemoText, setEditMemoText] = useState("");
     const [isSavingMemo, setIsSavingMemo] = useState(false);
@@ -308,7 +309,20 @@ export default function HistoryContent() {
                                                                 復元
                                                             </button>
                                                         </div>
-                                                        <p className="text-xs text-gray-600 whitespace-pre-wrap line-clamp-3">{v.formatted_text}</p>
+                                                        <p
+                                                            onClick={() => setExpandedVersionId(expandedVersionId === v.id ? null : v.id)}
+                                                            className={`text-xs text-gray-600 whitespace-pre-wrap cursor-pointer ${expandedVersionId === v.id ? "" : "line-clamp-3"}`}
+                                                        >
+                                                            {v.formatted_text}
+                                                        </p>
+                                                        {expandedVersionId !== v.id && (
+                                                            <button
+                                                                onClick={() => setExpandedVersionId(v.id)}
+                                                                className="text-xs text-gray-400 hover:text-gray-600 mt-1 transition"
+                                                            >
+                                                                もっと見る
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
