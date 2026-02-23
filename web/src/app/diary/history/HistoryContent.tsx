@@ -36,6 +36,9 @@ export default function HistoryContent() {
     const [versions, setVersions] = useState<DiaryVersion[]>([]);
     const [showVersions, setShowVersions] = useState(false);
     const [isRestoringVersion, setIsRestoringVersion] = useState(false);
+    const [isEditingMemo, setIsEditingMemo] = useState(false);
+    const [editMemoText, setEditMemoText] = useState("");
+    const [isSavingMemo, setIsSavingMemo] = useState(false);
 
     const loadDiaries = useCallback(async () => {
         setIsLoading(true);
@@ -79,6 +82,7 @@ export default function HistoryContent() {
         const found = diaries.find((d) => d.date === key);
         setSelectedDiary(found || null);
         setIsEditing(false);
+        setIsEditingMemo(false);
         setShowVersions(false);
     };
 
@@ -313,8 +317,58 @@ export default function HistoryContent() {
                                 )}
 
                                 <div className="mt-4 pt-3 border-t border-gray-100">
-                                    <p className="text-xs text-gray-400 font-semibold mb-1">元のメモ</p>
-                                    <p className="text-xs text-gray-500 whitespace-pre-wrap">{selectedDiary.original_text}</p>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="text-xs text-gray-400 font-semibold">元のメモ</p>
+                                        {!isEditingMemo ? (
+                                            <button
+                                                onClick={() => { setEditMemoText(selectedDiary.original_text); setIsEditingMemo(true); }}
+                                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 bg-gray-50 hover:bg-gray-100 transition"
+                                            >
+                                                <Edit3 size={12} />
+                                                編集
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={async () => {
+                                                        setIsSavingMemo(true);
+                                                        const { error } = await supabase
+                                                            .from("diaries")
+                                                            .update({ original_text: editMemoText, updated_at: new Date().toISOString() })
+                                                            .eq("id", selectedDiary.id);
+                                                        if (!error) {
+                                                            const updated = { ...selectedDiary, original_text: editMemoText };
+                                                            setSelectedDiary(updated);
+                                                            setDiaries((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+                                                            setIsEditingMemo(false);
+                                                        }
+                                                        setIsSavingMemo(false);
+                                                    }}
+                                                    disabled={isSavingMemo}
+                                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition disabled:opacity-50"
+                                                >
+                                                    {isSavingMemo ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                                    保存
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsEditingMemo(false)}
+                                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
+                                                >
+                                                    <X size={12} />
+                                                    取消
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isEditingMemo ? (
+                                        <textarea
+                                            value={editMemoText}
+                                            onChange={(e) => setEditMemoText(e.target.value)}
+                                            className="w-full min-h-[100px] p-2 text-xs text-gray-600 leading-relaxed rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                                        />
+                                    ) : (
+                                        <p className="text-xs text-gray-500 whitespace-pre-wrap">{selectedDiary.original_text}</p>
+                                    )}
                                 </div>
                             </>
                         ) : (
