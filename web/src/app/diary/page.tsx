@@ -1,5 +1,6 @@
 "use client";
 import FollowUpForm from "@/components/FollowUpForm";
+import { saveVersion } from "@/lib/diary-versions";
 import { createClient } from "@/lib/supabase";
 import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -32,9 +33,9 @@ export default function DiaryPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [displayName, setDisplayName] = useState("");
     const [pendingMode, setPendingMode] = useState<"new" | "merge" | "replace">("new");
-    const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
+    const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string; formatted_text: string } | null>(null);
     const [showConflictModal, setShowConflictModal] = useState(false);
-    const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
+    const [conflictData, setConflictData] = useState<{ id: string; original_text: string; formatted_text: string } | null>(null);
     const [selectedModel, setSelectedModel] = useState("gpt-5-mini");
     const [isPageLoading, setIsPageLoading] = useState(true);
     const cachedUserContextRef = useRef<string>("");
@@ -105,7 +106,7 @@ export default function DiaryPage() {
         }
     };
 
-    const startGeneration = async (mode: "new" | "merge" | "replace", existing: { id: string; original_text: string } | null) => {
+    const startGeneration = async (mode: "new" | "merge" | "replace", existing: { id: string; original_text: string; formatted_text: string } | null) => {
         setPendingMode(mode);
         setPendingExisting(existing);
 
@@ -119,6 +120,11 @@ export default function DiaryPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text, userContext }),
             });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                alert(`質問生成に失敗しました: ${errData.error || res.statusText}`);
+                return;
+            }
             const data = await res.json();
             if (data.questions?.length > 0) {
                 setQuestions(data.questions);
@@ -126,8 +132,9 @@ export default function DiaryPage() {
             } else {
                 await finalizeDiary(undefined, mode, existing);
             }
-        } catch {
-            await finalizeDiary(undefined, mode, existing);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "通信エラーが発生しました";
+            alert(`質問生成中にエラーが発生しました: ${message}`);
         } finally {
             setIsLoading(false);
         }
@@ -136,7 +143,7 @@ export default function DiaryPage() {
     const finalizeDiary = async (
         answers?: { question: string; answer: string }[],
         modeFallback?: "new" | "merge" | "replace",
-        existingFallback?: { id: string; original_text: string } | null
+        existingFallback?: { id: string; original_text: string; formatted_text: string } | null
     ) => {
         setIsGenerating(true);
         try {
@@ -171,6 +178,7 @@ export default function DiaryPage() {
                 : text;
 
             if (existingRec) {
+                await saveVersion(supabase, existingRec.id, existingRec.formatted_text, existingRec.original_text);
                 await supabase.from("diaries").update({
                     original_text: originalText,
                     formatted_text: data.formatted,

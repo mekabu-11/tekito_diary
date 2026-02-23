@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
         const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
         return NextResponse.json({ questions: questions.slice(0, 5) });
     } catch (error: unknown) {
+        console.error("[questions] Failed to generate questions:", error);
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
