@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
                 { role: "user", content: `日記：\n${diaryText}\n\n元のメモ：\n${originalMemo}` },
             ],
             response_format: { type: "json_object" },
-            temperature: 0.3,
             max_completion_tokens: 1000,
         });
 

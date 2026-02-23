@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
                 { role: "user", content: `メモ：\n${text}` },
             ],
             response_format: { type: "json_object" },
-            temperature: 0.7,
             max_completion_tokens: 800,
         });
         const parsed = JSON.parse(result.choices[0].message.content || "{}");
