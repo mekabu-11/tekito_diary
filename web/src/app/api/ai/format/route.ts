@@ -57,10 +57,18 @@ export async function POST(request: NextRequest) {
             ],
             max_completion_tokens: 1200,
         });
-        const formatted = (result.choices[0].message.content || "")
-            .replace(/^[-・•]\s*/gm, "");
+        const content = result.choices[0].message.content || "";
+        if (!content.trim()) {
+            console.error("[format] Empty response from model", {
+                model: model || DEFAULT_MODEL,
+                finishReason: result.choices[0].finish_reason,
+            });
+            return NextResponse.json({ error: "AIからの応答が空でした。もう一度お試しください。" }, { status: 502 });
+        }
+        const formatted = content.replace(/^[-・•]\s*/gm, "");
         return NextResponse.json({ formatted });
     } catch (error: unknown) {
+        console.error("[format] Failed to format diary:", error);
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }

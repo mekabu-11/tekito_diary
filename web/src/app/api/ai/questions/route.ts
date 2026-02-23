@@ -28,7 +28,6 @@ export async function POST(request: NextRequest) {
         userContext || "",
         "",
         '必ず以下のJSON形式のみで回答してください：{"questions":[{"question":"質問文","choices":["選択肢1","選択肢2","選択肢3"]}]}',
-        '質問が不要な場合：{"questions":[]}',
     ].filter(Boolean).join("\n");
 
     try {
