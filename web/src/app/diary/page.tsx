@@ -115,14 +115,13 @@ export default function DiaryPage() {
         try {
             const userContext = await getUserContext();
             cachedUserContextRef.current = userContext;
-            const res = await fetch("/api/gemini/questions", {
+            const res = await fetch("/api/ai/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text, userContext }),
             });
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                alert(`質問生成に失敗しました: ${errData.error || res.statusText}`);
+                await finalizeDiary(undefined, mode, existing);
                 return;
             }
             const data = await res.json();
@@ -158,7 +157,7 @@ export default function DiaryPage() {
             const userContext = cachedUserContextRef.current || await getUserContext();
             cachedUserContextRef.current = "";
 
-            const res = await fetch("/api/gemini/format", {
+            const res = await fetch("/api/ai/format", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -197,7 +196,7 @@ export default function DiaryPage() {
 
             // バックグラウンドで学習
             const { data: profile } = await supabase.from("core_profiles").select("*").eq("user_id", user.id).single();
-            fetch("/api/gemini/learn", {
+            fetch("/api/ai/learn", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
