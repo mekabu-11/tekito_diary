@@ -1,4 +1,3 @@
-import { ALLOWED_MODELS, DEFAULT_MODEL } from "@/lib/models";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -10,13 +9,10 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { text, userContext, model } = await request.json();
+    const { text, userContext } = await request.json();
 
     if (!text || typeof text !== "string" || text.length > 10000) {
         return NextResponse.json({ error: "Invalid text" }, { status: 400 });
-    }
-    if (model && !ALLOWED_MODELS.includes(model)) {
-        return NextResponse.json({ error: "Invalid model" }, { status: 400 });
     }
 
     const systemPrompt = [
@@ -37,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const result = await openai.chat.completions.create({
-            model: model || DEFAULT_MODEL,
+            model: "gpt-5-mini",
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: `メモ：\n${text}` },

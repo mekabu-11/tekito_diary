@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userMessage },
             ],
-            temperature: 0.5,
+            ...((model || DEFAULT_MODEL).includes("gpt-5.1-chat") ? {} : { temperature: 0.5 }),
             max_completion_tokens: 1200,
         });
         const formatted = (result.choices[0].message.content || "")

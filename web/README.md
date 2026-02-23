@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# てきとー日記
 
-## Getting Started
+メモをAIが日記に整形してくれる個人用日記アプリ。
 
-First, run the development server:
+## 機能
+
+- メモを入力すると、AIが自然な文章の日記に整形する
+- 日記投稿後にAIが深掘り質問を生成し、より詳しい日記にできる
+- カレンダーで過去の日記を閲覧・編集できる
+- 日記から自動でユーザーのプロフィール・エピソードを学習し、次回以降の質問・整形に活用する
+
+## 技術スタック
+
+- **フロントエンド**: Next.js 15 (App Router) / React / Tailwind CSS
+- **バックエンド**: Next.js API Routes
+- **データベース**: Supabase (PostgreSQL)
+- **AI**: OpenAI API (gpt-5-mini, gpt-5-nano, gpt-5.1 等)
+- **認証**: Supabase Auth
+
+## セットアップ
+
+### 1. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 2. 環境変数の設定
+
+`.env.local` を作成して以下を設定する。
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Supabase Service Role（管理者操作用・サーバーサイドのみ）
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+```
+
+### 3. 開発サーバーの起動
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[http://localhost:3000](http://localhost:3000) をブラウザで開く。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase テーブル構成
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| テーブル | 用途 |
+|---------|------|
+| `diaries` | 日記本文（original_text / formatted_text） |
+| `user_profiles` | ユーザー表示名・ロール（admin/user） |
+| `core_profiles` | AIが学習した性格・趣味・人間関係などの永続情報 |
+| `episodes` | AIが学習した直近のできごと（最大50件） |
 
-## Learn More
+## 管理者機能
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`user_profiles` テーブルで `role = 'admin'` に設定したユーザーは管理画面にアクセスでき、AIモデルの切り替えが可能。

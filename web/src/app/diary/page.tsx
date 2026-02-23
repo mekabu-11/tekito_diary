@@ -117,7 +117,7 @@ export default function DiaryPage() {
             const res = await fetch("/api/gemini/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, userContext, model: selectedModel }),
+                body: JSON.stringify({ text, userContext }),
             });
             const data = await res.json();
             if (data.questions?.length > 0) {
@@ -197,7 +197,6 @@ export default function DiaryPage() {
                     originalMemo: text,
                     dateKey,
                     currentProfile: profile || {},
-                    model: selectedModel,
                 }),
             });
 
