@@ -74,7 +74,7 @@ export default function DiaryPage() {
             parts.push(`【最近のできごと】\n${episodes.map((e) => `- [${e.date}] ${e.content}`).join("\n")}`);
         }
         if (!parts.length) return "";
-        return "\n\n" + parts.join("\n\n") + "\n↑この情報を参考にしてください。ただし無理に使わなくてよいです。";
+        return "\n\n" + parts.join("\n\n") + "\n↑この情報は固有名詞・人間関係の理解のためだけに使ってください。この内容を日記本文に含めないでください。";
     };
 
     const handleSubmit = async () => {
