@@ -107,6 +107,25 @@ create trigger on_auth_user_created
   for each row execute function handle_new_user();
 
 -- ============================================
+-- 日記バージョン履歴テーブル
+-- ============================================
+
+create table if not exists diary_versions (
+  id uuid primary key default gen_random_uuid(),
+  diary_id uuid references diaries(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  formatted_text text not null,
+  original_text text not null,
+  created_at timestamptz default now()
+);
+
+alter table diary_versions enable row level security;
+
+create policy "Users can view own diary versions" on diary_versions for select using (auth.uid() = user_id);
+create policy "Users can insert own diary versions" on diary_versions for insert with check (auth.uid() = user_id);
+create policy "Users can delete own diary versions" on diary_versions for delete using (auth.uid() = user_id);
+
+-- ============================================
 -- PWA プッシュ通知購読テーブル
 -- 既存のDBに追加する場合は以下だけ実行してください
 -- ============================================

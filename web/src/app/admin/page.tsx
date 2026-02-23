@@ -1,5 +1,4 @@
 "use client";
-export const dynamic = "force-dynamic";
 
 import { ArrowLeft, Check, Edit3, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";

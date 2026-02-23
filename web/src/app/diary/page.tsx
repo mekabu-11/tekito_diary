@@ -1,8 +1,8 @@
 "use client";
-export const dynamic = "force-dynamic";
 
 import FollowUpForm from "@/components/FollowUpForm";
 import { createClient } from "@/lib/supabase";
+import { AI_MODELS, DEFAULT_MODEL } from "@/lib/models";
 import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -37,7 +37,7 @@ export default function DiaryPage() {
     const [pendingExisting, setPendingExisting] = useState<{ id: string; original_text: string } | null>(null);
     const [showConflictModal, setShowConflictModal] = useState(false);
     const [conflictData, setConflictData] = useState<{ id: string; original_text: string } | null>(null);
-    const [selectedModel, setSelectedModel] = useState("gpt-5-mini");
+    const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
     const [isPageLoading, setIsPageLoading] = useState(true);
     const cachedUserContextRef = useRef<string>("");
     const dateKey = toDateKey(selectedDate);
@@ -116,7 +116,7 @@ export default function DiaryPage() {
         try {
             const userContext = await getUserContext();
             cachedUserContextRef.current = userContext;
-            const res = await fetch("/api/gemini/questions", {
+            const res = await fetch("/api/ai/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text, userContext, model: selectedModel }),
@@ -153,7 +153,7 @@ export default function DiaryPage() {
             const userContext = cachedUserContextRef.current || await getUserContext();
             cachedUserContextRef.current = "";
 
-            const res = await fetch("/api/gemini/format", {
+            const res = await fetch("/api/ai/format", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -191,7 +191,7 @@ export default function DiaryPage() {
 
             // バックグラウンドで学習
             const { data: profile } = await supabase.from("core_profiles").select("*").eq("user_id", user.id).single();
-            fetch("/api/gemini/learn", {
+            fetch("/api/ai/learn", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -206,9 +206,8 @@ export default function DiaryPage() {
             setText("");
             setShowFollowUp(false);
             router.push(`/diary/history?date=${dateKey}`);
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : "予期しないエラーが発生しました";
-            alert(errorMessage);
+        } catch {
+            // エラー時はそのままページに留まる（isGenerating が false に戻る）
         } finally {
             setIsGenerating(false);
         }
@@ -243,10 +242,9 @@ export default function DiaryPage() {
                                 onChange={(e) => setSelectedModel(e.target.value)}
                                 className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 outline-none"
                             >
-                                <option value="gpt-5-mini">gpt-mini</option>
-                                <option value="gpt-5-nano">gpt-nano</option>
-                                <option value="gpt-5.1">gpt-5.1</option>
-                                <option value="gpt-5.1-chat-latest">gpt-5.1-latest</option>
+                                {AI_MODELS.map((m) => (
+                                    <option key={m.id} value={m.id}>{m.label}</option>
+                                ))}
                             </select>
                             <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
                                 <Shield size={18} className="text-amber-500" />

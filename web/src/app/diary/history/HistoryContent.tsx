@@ -1,7 +1,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase";
-import { ArrowLeft, Check, Edit3, Loader2, X } from "lucide-react";
+import { DiaryVersion, getDiaryVersions, saveDiaryVersion } from "@/lib/diary-versions";
+import { ArrowLeft, Check, Clock, Edit3, Loader2, RotateCcw, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Calendar from "react-calendar";
@@ -15,6 +16,9 @@ interface Diary {
     formatted_text: string;
 }
 
+const toDateKey = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 export default function HistoryContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -23,12 +27,15 @@ export default function HistoryContent() {
 
     const [diaries, setDiaries] = useState<Diary[]>([]);
     const [diaryDates, setDiaryDates] = useState<Set<string>>(new Set());
-    const [selectedDate, setSelectedDate] = useState<string>(initialDate || "");
+    const [selectedDate, setSelectedDate] = useState<string>(initialDate || toDateKey(new Date()));
     const [selectedDiary, setSelectedDiary] = useState<Diary | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [versions, setVersions] = useState<DiaryVersion[]>([]);
+    const [showVersions, setShowVersions] = useState(false);
+    const [isRestoringVersion, setIsRestoringVersion] = useState(false);
 
     const loadDiaries = useCallback(async () => {
         setIsLoading(true);
@@ -49,12 +56,11 @@ export default function HistoryContent() {
                 setDiaries(data);
                 setDiaryDates(new Set(data.map((d) => d.date)));
 
-                if (initialDate) {
-                    const found = data.find((d) => d.date === initialDate);
-                    if (found) {
-                        setSelectedDate(initialDate);
-                        setSelectedDiary(found);
-                    }
+                const targetDate = initialDate || toDateKey(new Date());
+                const found = data.find((d) => d.date === targetDate);
+                if (found) {
+                    setSelectedDate(targetDate);
+                    setSelectedDiary(found);
                 }
             }
         } finally {
@@ -68,11 +74,12 @@ export default function HistoryContent() {
     }, [loadDiaries]);
 
     const handleDateClick = (date: Date) => {
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        const key = toDateKey(date);
         setSelectedDate(key);
         const found = diaries.find((d) => d.date === key);
         setSelectedDiary(found || null);
         setIsEditing(false);
+        setShowVersions(false);
     };
 
     const startEditing = () => {
@@ -89,6 +96,22 @@ export default function HistoryContent() {
     const saveEdit = async () => {
         if (!selectedDiary) return;
         setIsSaving(true);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            setIsSaving(false);
+            return;
+        }
+
+        // 保存前にバージョンを記録
+        await saveDiaryVersion(
+            supabase,
+            selectedDiary.id,
+            user.id,
+            selectedDiary.formatted_text,
+            selectedDiary.original_text,
+        );
+
         const { error } = await supabase
             .from("diaries")
             .update({
@@ -106,13 +129,69 @@ export default function HistoryContent() {
         setIsSaving(false);
     };
 
+    const loadVersions = async () => {
+        if (!selectedDiary) return;
+        const v = await getDiaryVersions(supabase, selectedDiary.id);
+        setVersions(v);
+        setShowVersions(true);
+    };
+
+    const restoreVersion = async (version: DiaryVersion) => {
+        if (!selectedDiary) return;
+        setIsRestoringVersion(true);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            setIsRestoringVersion(false);
+            return;
+        }
+
+        // 復元前に現在の状態をバージョンとして保存
+        await saveDiaryVersion(
+            supabase,
+            selectedDiary.id,
+            user.id,
+            selectedDiary.formatted_text,
+            selectedDiary.original_text,
+        );
+
+        const { error } = await supabase
+            .from("diaries")
+            .update({
+                formatted_text: version.formatted_text,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", selectedDiary.id);
+
+        if (!error) {
+            const updated = { ...selectedDiary, formatted_text: version.formatted_text };
+            setSelectedDiary(updated);
+            setDiaries((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+            setShowVersions(false);
+            // バージョン一覧を再読み込み
+            const v = await getDiaryVersions(supabase, selectedDiary.id);
+            setVersions(v);
+        }
+        setIsRestoringVersion(false);
+    };
+
     const tileContent = ({ date, view }: { date: Date; view: string }) => {
         if (view !== "month") return null;
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        const key = toDateKey(date);
         if (diaryDates.has(key)) {
             return <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mx-auto mt-0.5" />;
         }
         return null;
+    };
+
+    const formatVersionDate = (dateStr: string) => {
+        const d = new Date(dateStr);
+        return d.toLocaleString("ja-JP", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
     };
 
     return (
@@ -147,13 +226,22 @@ export default function HistoryContent() {
                                 <div className="flex items-center justify-between mb-2">
                                     <p className="text-xs text-gray-400 font-semibold">{selectedDiary.display_date}</p>
                                     {!isEditing ? (
-                                        <button
-                                            onClick={startEditing}
-                                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition"
-                                        >
-                                            <Edit3 size={13} />
-                                            編集
-                                        </button>
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                onClick={loadVersions}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-50 hover:bg-gray-100 transition"
+                                            >
+                                                <Clock size={13} />
+                                                履歴
+                                            </button>
+                                            <button
+                                                onClick={startEditing}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition"
+                                            >
+                                                <Edit3 size={13} />
+                                                編集
+                                            </button>
+                                        </div>
                                     ) : (
                                         <div className="flex items-center gap-1.5">
                                             <button
@@ -184,6 +272,43 @@ export default function HistoryContent() {
                                 ) : (
                                     <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
                                         {selectedDiary.formatted_text}
+                                    </div>
+                                )}
+
+                                {/* バージョン履歴 */}
+                                {showVersions && (
+                                    <div className="mt-4 pt-3 border-t border-gray-100">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs text-gray-400 font-semibold">編集履歴</p>
+                                            <button
+                                                onClick={() => setShowVersions(false)}
+                                                className="p-1 rounded-lg hover:bg-gray-100 transition"
+                                            >
+                                                <X size={14} className="text-gray-400" />
+                                            </button>
+                                        </div>
+                                        {versions.length === 0 ? (
+                                            <p className="text-xs text-gray-400 py-2">編集履歴はありません</p>
+                                        ) : (
+                                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                                {versions.map((v) => (
+                                                    <div key={v.id} className="border border-gray-100 rounded-xl p-3">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-xs text-gray-400">{formatVersionDate(v.created_at)}</span>
+                                                            <button
+                                                                onClick={() => restoreVersion(v)}
+                                                                disabled={isRestoringVersion}
+                                                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition disabled:opacity-50"
+                                                            >
+                                                                {isRestoringVersion ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                                                                復元
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600 whitespace-pre-wrap line-clamp-3">{v.formatted_text}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
