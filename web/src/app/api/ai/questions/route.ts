@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
     const prompt = `以下のメモを読んで、日記をより具体的にするための深掘り質問を生成してください。
 
 重要なルール：
-- メモが抽象的・短い場合（例：「カレー食べた」）→ 質問を4〜5個生成して深掘りする
-- メモがそこそこ具体的な場合 → 質問を2〜3個にする
-- メモがすでに十分詳しい場合 → 質問は0〜1個でよい（空配列[]でもOK）
+- メモが抽象的・短い場合（例：「カレー食べた」）→ 質問を7〜10個生成して深掘りする
+- メモがそこそこ具体的な場合 → 質問を4〜6個にする
+- メモがすでに十分詳しい場合 → 質問は0〜2個でよい（空配列[]でもOK）
 - メモの内容から自然に膨らませられるポイント（場所、感想、誰と、どうだった等）を質問にする
 ${userContext || ""}
 
@@ -39,7 +39,7 @@ ${text}`;
         const raw = (result.choices[0].message.content || "").trim();
         const jsonMatch = raw.match(/\[[\s\S]*\]/);
         const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-        return NextResponse.json({ questions: questions.slice(0, 5) });
+        return NextResponse.json({ questions: questions.slice(0, 10) });
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
         return NextResponse.json({ error: errorMessage }, { status: 500 });
