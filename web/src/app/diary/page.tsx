@@ -1,8 +1,8 @@
 "use client";
 
 import FollowUpForm from "@/components/FollowUpForm";
-import { createClient } from "@/lib/supabase";
 import { AI_MODELS, DEFAULT_MODEL } from "@/lib/models";
+import { createClient } from "@/lib/supabase";
 import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -119,7 +119,7 @@ export default function DiaryPage() {
             const res = await fetch("/api/ai/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, userContext, model: selectedModel }),
+                body: JSON.stringify({ text, userContext, model: "gpt-5-mini" }),
             });
             const data = await res.json();
             if (data.questions?.length > 0) {
@@ -199,7 +199,7 @@ export default function DiaryPage() {
                     originalMemo: text,
                     dateKey,
                     currentProfile: profile || {},
-                    model: selectedModel,
+                    model: "gpt-5-mini",
                 }),
             });
 

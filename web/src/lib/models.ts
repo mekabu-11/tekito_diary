@@ -5,4 +5,4 @@ export const AI_MODELS = [
     { id: "gpt-5.1-chat-latest", label: "gpt-5.1-latest" },
 ] as const;
 
-export const DEFAULT_MODEL = AI_MODELS[0].id;
+export const DEFAULT_MODEL = "gpt-5.1";
