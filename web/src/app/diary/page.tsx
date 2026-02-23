@@ -257,51 +257,58 @@ export default function DiaryPage() {
                 </div>
             </header>
 
-            <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
-                {/* Date Selector */}
-                <div className="flex items-center bg-white rounded-2xl p-3 shadow-sm">
-                    <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
-                        <ChevronLeft size={20} className="text-emerald-500" />
+            {isPageLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-4">
+                    <Loader2 size={40} className="animate-spin text-emerald-500/50 mb-4" />
+                    <p className="text-sm font-bold text-gray-400">読み込み中...</p>
+                </div>
+            ) : (
+                <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
+                    {/* Date Selector */}
+                    <div className="flex items-center bg-white rounded-2xl p-3 shadow-sm">
+                        <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+                            <ChevronLeft size={20} className="text-emerald-500" />
+                        </button>
+                        <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center">
+                            <p className="text-xl font-extrabold text-gray-900">{toDateLabel(selectedDate)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{toDisplayDate(selectedDate)}</p>
+                        </button>
+                        <button onClick={() => shiftDate(1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
+                            <ChevronRight size={20} className="text-emerald-500" />
+                        </button>
+                    </div>
+
+                    {/* Input */}
+                    <div className="bg-white rounded-2xl shadow-sm p-1">
+                        <textarea
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder={"例：朝カフェでモーニング食べた\n昼は会議が3つもあってしんどかった\n帰りにコンビニでアイス買った"}
+                            className="w-full min-h-[200px] p-4 text-sm leading-relaxed rounded-2xl outline-none resize-none placeholder:text-gray-300"
+                            disabled={isLoading}
+                        />
+                    </div>
+
+                    {/* Submit */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isLoading || !text.trim()}
+                        className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                    >
+                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                        {isLoading ? "質問を生成中..." : "AIで日記にする"}
                     </button>
-                    <button onClick={() => setSelectedDate(new Date())} className="flex-1 text-center">
-                        <p className="text-xl font-extrabold text-gray-900">{toDateLabel(selectedDate)}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{toDisplayDate(selectedDate)}</p>
-                    </button>
-                    <button onClick={() => shiftDate(1)} className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition">
-                        <ChevronRight size={20} className="text-emerald-500" />
+
+                    {/* History */}
+                    <button
+                        onClick={() => router.push("/diary/history")}
+                        className="w-full py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm hover:bg-emerald-100 transition flex items-center justify-center gap-2"
+                    >
+                        <Calendar size={18} />
+                        カレンダーで日記を見る
                     </button>
                 </div>
-
-                {/* Input */}
-                <div className="bg-white rounded-2xl shadow-sm p-1">
-                    <textarea
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        placeholder={"例：朝カフェでモーニング食べた\n昼は会議が3つもあってしんどかった\n帰りにコンビニでアイス買った"}
-                        className="w-full min-h-[200px] p-4 text-sm leading-relaxed rounded-2xl outline-none resize-none placeholder:text-gray-300"
-                        disabled={isLoading}
-                    />
-                </div>
-
-                {/* Submit */}
-                <button
-                    onClick={handleSubmit}
-                    disabled={isLoading || !text.trim()}
-                    className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
-                >
-                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                    {isLoading ? "質問を生成中..." : "AIで日記にする"}
-                </button>
-
-                {/* History */}
-                <button
-                    onClick={() => router.push("/diary/history")}
-                    className="w-full py-3 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm hover:bg-emerald-100 transition flex items-center justify-center gap-2"
-                >
-                    <Calendar size={18} />
-                    カレンダーで日記を見る
-                </button>
-            </div>
+            )}
 
             {/* Follow-up modal */}
             {showFollowUp && (

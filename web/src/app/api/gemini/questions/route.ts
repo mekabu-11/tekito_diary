@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
             ],
             response_format: { type: "json_object" },
             temperature: 0.7,
-            max_tokens: 800,
+            max_completion_tokens: 800,
         });
         const parsed = JSON.parse(result.choices[0].message.content || "{}");
         const questions = Array.isArray(parsed.questions) ? parsed.questions : [];

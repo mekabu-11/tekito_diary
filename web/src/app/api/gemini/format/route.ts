@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
                 { role: "user", content: userMessage },
             ],
             temperature: 0.5,
-            max_tokens: 1200,
+            max_completion_tokens: 1200,
         });
         const formatted = (result.choices[0].message.content || "")
             .replace(/^[-・•]\s*/gm, "");
