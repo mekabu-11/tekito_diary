@@ -1,6 +1,4 @@
 "use client";
-export const dynamic = "force-dynamic";
-
 import FollowUpForm from "@/components/FollowUpForm";
 import { createClient } from "@/lib/supabase";
 import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
@@ -246,7 +244,7 @@ export default function DiaryPage() {
                                 <option value="gpt-5-mini">gpt-mini</option>
                                 <option value="gpt-5-nano">gpt-nano</option>
                                 <option value="gpt-5.1">gpt-5.1</option>
-                                <option value="gpt-5.1-chat-latest">gpt-5.1-latest</option>
+                                <option value="gpt-5.1-chat-latest">gpt-5.1-chat</option>
                             </select>
                             <button onClick={() => router.push("/admin")} className="p-2 rounded-lg hover:bg-amber-50 transition" title="管理画面">
                                 <Shield size={18} className="text-amber-500" />
