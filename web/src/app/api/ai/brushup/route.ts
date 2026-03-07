@@ -15,20 +15,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "テキストが必要です" }, { status: 400 });
     }
 
-    let prompt = `以下の日記の文章をブラッシュアップしてください。
+    let prompt: string;
+
+    if (instruction?.trim()) {
+        prompt = `以下の日記の文章を、ユーザーの指示に従ってブラッシュアップしてください。
+指示の内容を最優先で反映してください。
+
+【最優先の指示】
+${instruction.trim()}
+
+注意点：
+- 書かれている事実や出来事は変えない
+- 指示にない内容を勝手に追加しない
+
+【元の日記】
+${text}`;
+    } else {
+        prompt = `以下の日記の文章をブラッシュアップしてください。
 
 ルール：
-- 書かれている事実や内容は絶対に変えない
+- 書かれている事実や内容は変えない
 - 新しい出来事や感情を勝手に追加しない
 - 箇条書きにしない。自然な文章を維持する
 - より読みやすく、自然な日本語にする
-- 文章の構成や段落分けは必要に応じて改善してよい`;
+- 文章の構成や段落分けは必要に応じて改善してよい
 
-    if (instruction?.trim()) {
-        prompt += `\n\n【ユーザーからの指示】\n${instruction.trim()}`;
+【元の日記】
+${text}`;
     }
-
-    prompt += `\n\n【元の日記】\n${text}`;
 
     try {
         const result = await openai.chat.completions.create({
