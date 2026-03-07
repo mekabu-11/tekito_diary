@@ -2,7 +2,7 @@
 
 import { DiaryVersion, getDiaryVersions, saveDiaryVersion } from "@/lib/diary-versions";
 import { createClient } from "@/lib/supabase";
-import { ArrowLeft, Check, Clock, Edit3, Loader2, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Check, Clock, Edit3, Loader2, RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Calendar from "react-calendar";
@@ -40,6 +40,10 @@ export default function HistoryContent() {
     const [isEditingMemo, setIsEditingMemo] = useState(false);
     const [editMemoText, setEditMemoText] = useState("");
     const [isSavingMemo, setIsSavingMemo] = useState(false);
+    const [showBrushUpInput, setShowBrushUpInput] = useState(false);
+    const [brushUpInstruction, setBrushUpInstruction] = useState("");
+    const [isBrushingUp, setIsBrushingUp] = useState(false);
+    const [brushUpPreview, setBrushUpPreview] = useState<string | null>(null);
 
     const loadDiaries = useCallback(async () => {
         setIsLoading(true);
@@ -85,6 +89,80 @@ export default function HistoryContent() {
         setIsEditing(false);
         setIsEditingMemo(false);
         setShowVersions(false);
+        setShowBrushUpInput(false);
+        setBrushUpPreview(null);
+    };
+
+    const startBrushUp = () => {
+        setShowBrushUpInput(true);
+        setBrushUpInstruction("");
+        setBrushUpPreview(null);
+    };
+
+    const executeBrushUp = async () => {
+        if (!selectedDiary) return;
+        setIsBrushingUp(true);
+        try {
+            const res = await fetch("/api/ai/brushup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    text: selectedDiary.formatted_text,
+                    instruction: brushUpInstruction.trim() || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (data.brushedUp) {
+                setBrushUpPreview(data.brushedUp);
+            }
+        } catch {
+            // エラー時は何もしない
+        } finally {
+            setIsBrushingUp(false);
+        }
+    };
+
+    const applyBrushUp = async () => {
+        if (!selectedDiary || !brushUpPreview) return;
+        setIsSaving(true);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            setIsSaving(false);
+            return;
+        }
+
+        // バージョン保存
+        await saveDiaryVersion(
+            supabase,
+            selectedDiary.id,
+            user.id,
+            selectedDiary.formatted_text,
+            selectedDiary.original_text,
+        );
+
+        const { error } = await supabase
+            .from("diaries")
+            .update({
+                formatted_text: brushUpPreview,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", selectedDiary.id);
+
+        if (!error) {
+            const updated = { ...selectedDiary, formatted_text: brushUpPreview };
+            setSelectedDiary(updated);
+            setDiaries((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+        }
+        setBrushUpPreview(null);
+        setShowBrushUpInput(false);
+        setIsSaving(false);
+    };
+
+    const cancelBrushUp = () => {
+        setBrushUpPreview(null);
+        setShowBrushUpInput(false);
+        setBrushUpInstruction("");
     };
 
     const startEditing = () => {
@@ -235,7 +313,7 @@ export default function HistoryContent() {
                                 <>
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-xs text-gray-400 font-semibold">{selectedDiary.display_date}</p>
-                                        {!isEditing ? (
+                                        {!isEditing && !brushUpPreview ? (
                                             <div className="flex items-center gap-1.5">
                                                 <button
                                                     onClick={loadVersions}
@@ -243,6 +321,14 @@ export default function HistoryContent() {
                                                 >
                                                     <Clock size={13} />
                                                     履歴
+                                                </button>
+                                                <button
+                                                    onClick={startBrushUp}
+                                                    disabled={isBrushingUp}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition disabled:opacity-50"
+                                                >
+                                                    <Sparkles size={13} />
+                                                    ブラッシュアップ
                                                 </button>
                                                 <button
                                                     onClick={startEditing}
@@ -279,9 +365,66 @@ export default function HistoryContent() {
                                             onChange={(e) => setEditText(e.target.value)}
                                             className="w-full min-h-[200px] p-3 text-sm text-gray-800 leading-relaxed rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
                                         />
+                                    ) : brushUpPreview ? (
+                                        <>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-xs text-purple-500 font-semibold">✨ プレビュー</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        onClick={applyBrushUp}
+                                                        disabled={isSaving}
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-purple-500 hover:bg-purple-600 transition disabled:opacity-50"
+                                                    >
+                                                        {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                                        適用
+                                                    </button>
+                                                    <button
+                                                        onClick={cancelBrushUp}
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
+                                                    >
+                                                        <X size={13} />
+                                                        やめる
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap p-3 rounded-xl bg-purple-50 border border-purple-100">
+                                                {brushUpPreview}
+                                            </div>
+                                        </>
                                     ) : (
                                         <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
                                             {selectedDiary.formatted_text}
+                                        </div>
+                                    )}
+
+                                    {/* ブラッシュアップ指示入力 */}
+                                    {showBrushUpInput && !brushUpPreview && (
+                                        <div className="mt-3 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={brushUpInstruction}
+                                                    onChange={(e) => setBrushUpInstruction(e.target.value)}
+                                                    placeholder="指示を入力（例: もっとカジュアルに）"
+                                                    className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-purple-400 placeholder:text-gray-300"
+                                                    onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) executeBrushUp(); }}
+                                                    disabled={isBrushingUp}
+                                                />
+                                                <button
+                                                    onClick={executeBrushUp}
+                                                    disabled={isBrushingUp}
+                                                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-white bg-purple-500 hover:bg-purple-600 transition disabled:opacity-50"
+                                                >
+                                                    {isBrushingUp ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                                </button>
+                                                <button
+                                                    onClick={cancelBrushUp}
+                                                    className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-gray-400">空欄のまま送信すると、一般的なブラッシュアップを行います</p>
                                         </div>
                                     )}
 
