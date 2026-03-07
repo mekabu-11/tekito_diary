@@ -46,7 +46,7 @@ ${text}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: model || "gpt-5-mini",
+            model: model || "gpt-5.1",
             messages: [{ role: "user", content: prompt }],
         });
         const brushedUp = (result.choices[0].message.content || "")
