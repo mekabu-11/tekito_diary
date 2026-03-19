@@ -313,7 +313,43 @@ export default function HistoryContent() {
                                 <>
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-xs text-gray-400 font-semibold">{selectedDiary.display_date}</p>
-                                        {!isEditing && !brushUpPreview ? (
+                                        {isEditing ? (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={saveEdit}
+                                                    disabled={isSaving}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition disabled:opacity-50"
+                                                >
+                                                    {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                                    保存
+                                                </button>
+                                                <button
+                                                    onClick={cancelEditing}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
+                                                >
+                                                    <X size={13} />
+                                                    取消
+                                                </button>
+                                            </div>
+                                        ) : brushUpPreview ? (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={applyBrushUp}
+                                                    disabled={isSaving}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-purple-500 hover:bg-purple-600 transition disabled:opacity-50"
+                                                >
+                                                    {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                                    適用
+                                                </button>
+                                                <button
+                                                    onClick={cancelBrushUp}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
+                                                >
+                                                    <X size={13} />
+                                                    やめる
+                                                </button>
+                                            </div>
+                                        ) : (
                                             <div className="flex items-center gap-1.5">
                                                 <button
                                                     onClick={loadVersions}
@@ -338,24 +374,6 @@ export default function HistoryContent() {
                                                     編集
                                                 </button>
                                             </div>
-                                        ) : (
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={saveEdit}
-                                                    disabled={isSaving}
-                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition disabled:opacity-50"
-                                                >
-                                                    {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                                                    保存
-                                                </button>
-                                                <button
-                                                    onClick={cancelEditing}
-                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
-                                                >
-                                                    <X size={13} />
-                                                    取消
-                                                </button>
-                                            </div>
                                         )}
                                     </div>
 
@@ -367,26 +385,7 @@ export default function HistoryContent() {
                                         />
                                     ) : brushUpPreview ? (
                                         <>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-xs text-purple-500 font-semibold">✨ プレビュー</p>
-                                                <div className="flex items-center gap-1.5">
-                                                    <button
-                                                        onClick={applyBrushUp}
-                                                        disabled={isSaving}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white bg-purple-500 hover:bg-purple-600 transition disabled:opacity-50"
-                                                    >
-                                                        {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                                                        適用
-                                                    </button>
-                                                    <button
-                                                        onClick={cancelBrushUp}
-                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition"
-                                                    >
-                                                        <X size={13} />
-                                                        やめる
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            <p className="text-xs text-purple-500 font-semibold mb-2">✨ プレビュー</p>
                                             <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap p-3 rounded-xl bg-purple-50 border border-purple-100">
                                                 {brushUpPreview}
                                             </div>
@@ -542,6 +541,22 @@ export default function HistoryContent() {
                     )}
                 </>)}
             </div>
+
+            {/* Brushup Loading Overlay — blocks all interaction */}
+            {isBrushingUp && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center"
+                    style={{ touchAction: "none" }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.preventDefault()}
+                >
+                    <div className="bg-white rounded-3xl p-8 shadow-xl text-center space-y-4">
+                        <Loader2 size={40} className="animate-spin text-purple-500 mx-auto" />
+                        <p className="text-sm font-bold text-gray-700">ブラッシュアップ中...</p>
+                        <p className="text-xs text-gray-400">少々お待ちください</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
