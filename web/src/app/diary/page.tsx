@@ -119,7 +119,7 @@ export default function DiaryPage() {
             const res = await fetch("/api/ai/questions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text, userContext, model: "gpt-5-mini" }),
+                body: JSON.stringify({ text, userContext, model: "gpt-5.4-mini" }),
             });
             const data = await res.json();
             if (data.questions?.length > 0) {
@@ -199,7 +199,7 @@ export default function DiaryPage() {
                     originalMemo: text,
                     dateKey,
                     currentProfile: profile || {},
-                    model: "gpt-5-mini",
+                    model: "gpt-5.4-mini",
                 }),
             });
 

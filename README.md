@@ -33,7 +33,7 @@
 | アイコン | **Lucide React** |
 | カレンダー | **React Calendar** |
 | 認証・データベース | **Supabase** (Auth / PostgreSQL / RLS) |
-| AI API | **OpenAI** (gpt-5-mini) |
+| AI API | **OpenAI** (gpt-5.4-mini) |
 | ホスティング | **Vercel** |
 
 ---

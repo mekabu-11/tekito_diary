@@ -62,7 +62,7 @@ ${text}${answersSection}`;
 
     try {
         const result = await openai.chat.completions.create({
-            model: model || "gpt-5-mini",
+            model: model || "gpt-5.4-mini",
             messages: [{ role: "user", content: prompt }],
         });
         const formatted = (result.choices[0].message.content || "")

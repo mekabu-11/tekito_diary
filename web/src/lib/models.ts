@@ -1,8 +1,8 @@
 export const AI_MODELS = [
-    { id: "gpt-5-mini", label: "gpt-mini" },
-    { id: "gpt-5-nano", label: "gpt-nano" },
-    { id: "gpt-5.1", label: "gpt-5.1" },
-    { id: "gpt-5.1-chat-latest", label: "gpt-5.1-latest" },
+    { id: "gpt-5.4-mini", label: "gpt-5.4-mini" },
+    { id: "gpt-5.4-nano", label: "gpt-5.4-nano" },
+    { id: "gpt-5-mini", label: "gpt-5-mini" },
+    { id: "gpt-5-nano", label: "gpt-5-nano" },
 ] as const;
 
-export const DEFAULT_MODEL = "gpt-5.1";
+export const DEFAULT_MODEL = "gpt-5.4-mini";
