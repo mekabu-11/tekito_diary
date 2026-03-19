@@ -314,6 +314,24 @@ export default function DiaryPage() {
                 />
             )}
 
+            {/* Loading Overlay — blocks all interaction */}
+            {(isLoading || isGenerating) && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center"
+                    style={{ touchAction: "none" }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.preventDefault()}
+                >
+                    <div className="bg-white rounded-3xl p-8 shadow-xl text-center space-y-4">
+                        <Loader2 size={40} className="animate-spin text-emerald-500 mx-auto" />
+                        <p className="text-sm font-bold text-gray-700">
+                            {isLoading ? "深掘り質問を生成中..." : "日記を生成中..."}
+                        </p>
+                        <p className="text-xs text-gray-400">少々お待ちください</p>
+                    </div>
+                </div>
+            )}
+
             {/* Conflict Modal */}
             {showConflictModal && conflictData && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
