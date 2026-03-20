@@ -1,16 +1,40 @@
+/**
+ * 深掘り質問生成 API
+ *
+ * エンドポイント: POST /api/ai/questions
+ *
+ * ユーザーが入力したメモの内容に基づいて、日記をより具体的にするための
+ * 深掘り質問を AI が自動生成する。
+ * 各質問には選択肢が付き、ユーザーは選択肢を選ぶか自由入力で回答できる。
+ *
+ * 質問数はメモの具体性に応じて動的に変化:
+ * - 抽象的・短いメモ → 7〜10個
+ * - そこそこ具体的 → 4〜6個
+ * - 十分詳しい → 0〜2個（空配列も可）
+ *
+ * リクエストボディ:
+ * - text: ユーザーが入力したメモ（必須）
+ * - userContext: ユーザーのプロフィール情報（選択肢のパーソナライズ用、任意）
+ * - model: 使用する AI モデル名（任意、デフォルト: gpt-5.4-mini）
+ *
+ * レスポンス: { questions: [{ question: "質問文", choices: ["選択肢1", "選択肢2", ...] }] }
+ */
 import { createServerSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
+/** OpenAI クライアントの初期化 */
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 export async function POST(request: NextRequest) {
+    // 認証チェック
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { text, userContext, model } = await request.json();
 
+    // AI に深掘り質問を生成させるプロンプト
     const prompt = `以下のメモを読んで、日記をより具体的にするための深掘り質問を生成してください。
 
 重要なルール：
@@ -32,13 +56,18 @@ ${userContext || ""}
 ${text}`;
 
     try {
+        // OpenAI API で質問を生成
         const result = await openai.chat.completions.create({
             model: model || "gpt-5.4-mini",
             messages: [{ role: "user", content: prompt }],
         });
+
+        // AI の出力から JSON 配列部分を抽出（余計なテキストが含まれる場合に対応）
         const raw = (result.choices[0].message.content || "").trim();
         const jsonMatch = raw.match(/\[[\s\S]*\]/);
         const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+
+        // 最大10問までに制限して返す
         return NextResponse.json({ questions: questions.slice(0, 10) });
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";

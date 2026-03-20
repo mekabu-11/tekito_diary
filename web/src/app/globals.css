@@ -1,6 +1,20 @@
+/**
+ * グローバル CSS（globals.css）
+ *
+ * アプリケーション全体に適用されるスタイル定義。
+ * Tailwind CSS のインポートと、react-calendar ライブラリのスタイルオーバーライドを含む。
+ *
+ * react-calendar のデフォルトスタイルはアプリのデザインに合わないため、
+ * .calendar-wrapper クラスのスコープ内でカスタムスタイルを適用している。
+ */
 @import "tailwindcss";
 
-/* Calendar styling overrides */
+/* ===================================
+   react-calendar カスタムスタイル
+   日記カレンダー画面（/diary/history）で使用
+   =================================== */
+
+/* カレンダー全体: 幅100%、ボーダーなし、角丸 */
 .calendar-wrapper .react-calendar {
   width: 100%;
   border: none;
@@ -8,34 +22,40 @@
   border-radius: 16px;
 }
 
+/* ナビゲーションボタン（月切替の矢印・月名表示） */
 .calendar-wrapper .react-calendar__navigation button {
   font-size: 14px;
   font-weight: 700;
   color: #1a1a2e;
 }
 
+/* 各日付タイル: 角丸でクリッカブルに */
 .calendar-wrapper .react-calendar__tile {
   border-radius: 12px;
   padding: 10px 6px;
   font-size: 13px;
 }
 
+/* 選択中の日付タイル: エメラルドグリーンのハイライト */
 .calendar-wrapper .react-calendar__tile--active {
   background: #10B981 !important;
   color: white;
   border-radius: 12px;
 }
 
+/* 今日の日付タイル: 薄いグリーンの背景 */
 .calendar-wrapper .react-calendar__tile--now {
   background: #D1FAE5;
   border-radius: 12px;
 }
 
+/* ホバー時の日付タイル: やや濃いグリーン */
 .calendar-wrapper .react-calendar__tile:hover {
   background: #A7F3D0;
   border-radius: 12px;
 }
 
+/* 曜日ヘッダー（月・火・水...）のスタイル */
 .calendar-wrapper .react-calendar__month-view__weekdays {
   font-size: 11px;
   font-weight: 600;

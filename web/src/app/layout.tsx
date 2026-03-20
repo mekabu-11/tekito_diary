@@ -1,6 +1,17 @@
+/**
+ * ルートレイアウト（app/layout.tsx）
+ *
+ * アプリケーション全体に共通するHTMLレイアウトを定義する。
+ * Next.js の App Router で全ページに適用される最上位のレイアウトコンポーネント。
+ *
+ * - PWA（Progressive Web App）対応: manifest.json、apple-touch-icon の設定
+ * - メタデータ: アプリ名・説明・テーマカラーの定義
+ * - ビューポート: モバイル対応のレスポンシブ設定
+ */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+/** アプリケーション全体のメタデータ（SEO・PWA用） */
 export const metadata: Metadata = {
   title: "てきとー日記",
   description: "適当に書くだけでAIが日記にしてくれるアプリ",
@@ -12,6 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
+/** ビューポート設定（モバイルでのピンチズーム無効化・テーマカラー） */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -19,6 +31,11 @@ export const viewport: Viewport = {
   themeColor: "#6C63FF",
 };
 
+/**
+ * 全ページを包むルートレイアウトコンポーネント
+ * - lang="ja" で日本語ページとして設定
+ * - グローバルCSSとTailwindの基本スタイルを適用
+ */
 export default function RootLayout({
   children,
 }: {
@@ -27,6 +44,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        {/* PWA: iOS ホーム画面アイコン */}
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="bg-gray-50 text-gray-900 antialiased">

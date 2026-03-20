@@ -1,33 +1,55 @@
+/**
+ * 管理者ページ（app/admin/page.tsx）
+ *
+ * 管理者専用のユーザー管理画面。
+ * ロールが "admin" のユーザーのみアクセス可能（非管理者は /diary にリダイレクト）。
+ *
+ * 機能:
+ * - ユーザー一覧の表示（メール、表示名、ロール）
+ * - 新規ユーザーの作成（メール、パスワード、表示名）
+ * - 既存ユーザーの編集（メール、表示名、ロール変更）
+ * - ユーザーの削除（確認ダイアログ付き）
+ *
+ * すべての操作は /api/admin/users API を通じて実行される。
+ */
 "use client";
 
 import { ArrowLeft, Check, Edit3, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+/** ユーザー情報の型定義（Auth + Profile を結合したもの） */
 interface User {
     id: string;
     email: string;
     displayName: string;
-    role: string;
+    role: string;      // "user" or "admin"
     createdAt: string;
 }
 
 export default function AdminPage() {
     const router = useRouter();
+
+    // --- ユーザー一覧の状態 ---
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- 新規ユーザー作成フォームの状態 ---
     const [showCreate, setShowCreate] = useState(false);
     const [newEmail, setNewEmail] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [newName, setNewName] = useState("");
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState("");
+
+    // --- ユーザー編集モーダルの状態 ---
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [editEmail, setEditEmail] = useState("");
     const [editName, setEditName] = useState("");
     const [editRole, setEditRole] = useState("");
     const [saving, setSaving] = useState(false);
 
+    /** API からユーザー一覧を取得する */
     const loadUsers = useCallback(async () => {
         setIsLoading(true);
         const res = await fetch("/api/admin/users");
@@ -36,6 +58,12 @@ export default function AdminPage() {
         setIsLoading(false);
     }, []);
 
+    /**
+     * ページ初期化:
+     * 1. プロファイル API で管理者権限を確認
+     * 2. 非管理者はリダイレクト
+     * 3. 管理者ならユーザー一覧をロード
+     */
     useEffect(() => {
         const checkAdminAndLoad = async () => {
             const res = await fetch("/api/auth/profile");
@@ -47,6 +75,10 @@ export default function AdminPage() {
         checkAdminAndLoad();
     }, [router, loadUsers]);
 
+    /**
+     * 新規ユーザー作成ハンドラ
+     * フォーム入力値を /api/admin/users に POST して作成
+     */
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         setCreating(true);
@@ -62,6 +94,7 @@ export default function AdminPage() {
         if (data.error) {
             setError(data.error);
         } else {
+            // 成功: フォームをリセットして一覧を再取得
             setNewEmail(""); setNewPassword(""); setNewName("");
             setShowCreate(false);
             await loadUsers();
@@ -69,6 +102,10 @@ export default function AdminPage() {
         setCreating(false);
     };
 
+    /**
+     * ユーザー削除ハンドラ
+     * 確認ダイアログの後、DELETE リクエストを送信
+     */
     const handleDelete = async (userId: string, email: string) => {
         if (!confirm(`${email} を削除しますか？`)) return;
         await fetch("/api/admin/users", {
@@ -79,6 +116,7 @@ export default function AdminPage() {
         await loadUsers();
     };
 
+    /** 編集モーダルを開く: 選択したユーザーの現在値を編集フォームにセット */
     const openEdit = (u: User) => {
         setEditingUser(u);
         setEditEmail(u.email);
@@ -86,6 +124,10 @@ export default function AdminPage() {
         setEditRole(u.role);
     };
 
+    /**
+     * 編集内容を保存するハンドラ
+     * メールが変更された場合のみ email フィールドを送信
+     */
     const handleSaveEdit = async () => {
         if (!editingUser) return;
         setSaving(true);
@@ -104,8 +146,13 @@ export default function AdminPage() {
         await loadUsers();
     };
 
+    // ========================================
+    // レンダリング
+    // ========================================
+
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* ===== ヘッダー: 戻るボタン、タイトル、ユーザー追加ボタン ===== */}
             <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
                 <button onClick={() => router.push("/diary")} className="p-2 rounded-lg hover:bg-gray-100 transition">
                     <ArrowLeft size={20} className="text-gray-600" />
@@ -121,7 +168,7 @@ export default function AdminPage() {
             </header>
 
             <div className="max-w-2xl mx-auto p-4 space-y-4">
-                {/* Create Form */}
+                {/* ===== 新規ユーザー作成フォーム（トグル表示） ===== */}
                 {showCreate && (
                     <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
                         <h3 className="font-bold text-sm text-gray-700">新規ユーザー作成</h3>
@@ -141,7 +188,7 @@ export default function AdminPage() {
                     </form>
                 )}
 
-                {/* Edit Modal */}
+                {/* ===== ユーザー編集モーダル ===== */}
                 {editingUser && (
                     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
                         <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
@@ -183,7 +230,7 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* User List */}
+                {/* ===== ユーザー一覧 ===== */}
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 size={24} className="animate-spin text-emerald-400" />
@@ -195,18 +242,22 @@ export default function AdminPage() {
                         )}
                         {users.map((u) => (
                             <div key={u.id} className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
+                                {/* ユーザー情報（名前・メール） */}
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-sm text-gray-800 truncate">
                                         {u.displayName || <span className="text-gray-400">（名前なし）</span>}
                                     </p>
                                     <p className="text-xs text-gray-400 truncate">{u.email}</p>
                                 </div>
+                                {/* ロールバッジ: admin は金色、user は灰色 */}
                                 <span className={`text-xs font-bold px-2 py-1 rounded-lg ${u.role === "admin" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>
                                     {u.role}
                                 </span>
+                                {/* 編集ボタン */}
                                 <button onClick={() => openEdit(u)} className="p-2 rounded-lg hover:bg-gray-100 transition" title="編集">
                                     <Edit3 size={16} className="text-gray-400" />
                                 </button>
+                                {/* 削除ボタン */}
                                 <button onClick={() => handleDelete(u.id, u.email)} className="p-2 rounded-lg hover:bg-red-50 transition" title="削除">
                                     <Trash2 size={16} className="text-red-400" />
                                 </button>
