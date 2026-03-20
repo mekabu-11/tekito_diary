@@ -406,12 +406,12 @@ export default function HistoryContent() {
                                                     onChange={(e) => setBrushUpInstruction(e.target.value)}
                                                     placeholder="指示を入力（例: もっとカジュアルに）"
                                                     className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-purple-400 placeholder:text-gray-300"
-                                                    onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) executeBrushUp(); }}
+                                                    onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && brushUpInstruction.trim()) executeBrushUp(); }}
                                                     disabled={isBrushingUp}
                                                 />
                                                 <button
                                                     onClick={executeBrushUp}
-                                                    disabled={isBrushingUp}
+                                                    disabled={isBrushingUp || !brushUpInstruction.trim()}
                                                     className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-white bg-purple-500 hover:bg-purple-600 transition disabled:opacity-50"
                                                 >
                                                     {isBrushingUp ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
@@ -423,7 +423,7 @@ export default function HistoryContent() {
                                                     <X size={14} />
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-gray-400">空欄のまま送信すると、一般的なブラッシュアップを行います</p>
+
                                         </div>
                                     )}
 
