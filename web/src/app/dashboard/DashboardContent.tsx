@@ -40,6 +40,21 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // ========== 型定義 ==========
 
@@ -93,6 +108,49 @@ function setCachedData<T>(key: string, dateKey: string, data: T): void {
     localStorage.setItem(key, JSON.stringify({ dateKey, data }));
 }
 
+// ========== Sortable Component ==========
+
+function SortableSection({ id, isEditMode, children }: { id: string; isEditMode: boolean; children: React.ReactNode }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id, disabled: !isEditMode });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`relative transition-opacity duration-200 ${
+                isEditMode ? "border flex-col rounded-xl border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/30 dark:bg-teal-900/10 p-1" : ""
+            } ${isDragging ? "opacity-40" : "opacity-100"}`}
+        >
+            {isEditMode && (
+                <div 
+                    {...attributes} 
+                    {...listeners}
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-white dark:bg-slate-700 px-6 py-1.5 rounded-full shadow-md border border-stone-200 dark:border-slate-600 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-stone-50 dark:hover:bg-slate-600 transition"
+                    style={{ touchAction: 'none' }} /* prevent scrolling while dragging */
+                >
+                    <GripHorizontal size={18} className="text-slate-400 dark:text-slate-500" />
+                </div>
+            )}
+            <div className={`${isEditMode ? "pointer-events-none opacity-60" : ""}`}>
+                {children}
+            </div>
+        </div>
+    );
+}
+
 // ========== メインコンポーネント ==========
 
 export default function DashboardContent() {
@@ -120,10 +178,8 @@ export default function DashboardContent() {
 
     // --- 並べ替え状態 ---
     const [isEditMode, setIsEditMode] = useState(false);
-    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
     const [sectionOrder, setSectionOrder] = useState<string[]>([
-        "calendar", "stats", "mood", "comment", "report", "random"
+        "calendar", "mood", "comment", "report", "random"
     ]);
 
     const todayKey = toDateKey(new Date());
@@ -326,77 +382,34 @@ export default function DashboardContent() {
     };
 
     // ========================================
-    // 並べ替え・表示ハンドラ (Drag and Drop)
+    // 並べ替え・表示ハンドラ (dnd-kit)
     // ========================================
 
-    const handleDragStart = (e: React.DragEvent, idx: number) => {
-        setDraggedIdx(idx);
-        e.dataTransfer.effectAllowed = "move";
-    };
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5, // タッチデバイスでスクロールとドラッグを区別するため、5px動かした時のみドラッグ開始
+            },
+        })
+    );
 
-    const handleDragEnter = (e: React.DragEvent, idx: number) => {
-        e.preventDefault();
-        if (draggedIdx !== null && draggedIdx !== idx) {
-            setDragOverIdx(idx);
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = sectionOrder.indexOf(active.id as string);
+            const newIndex = sectionOrder.indexOf(over.id as string);
+            
+            const newOrder = arrayMove(sectionOrder, oldIndex, newIndex);
+            setSectionOrder(newOrder);
+            localStorage.setItem("dashboard_layout", JSON.stringify(newOrder));
         }
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
-
-    const handleDrop = (e: React.DragEvent, dropIdx: number) => {
-        e.preventDefault();
-        if (draggedIdx === null || draggedIdx === dropIdx) {
-            handleDragEnd();
-            return;
-        }
-
-        const newOrder = [...sectionOrder];
-        const item = newOrder[draggedIdx];
-        newOrder.splice(draggedIdx, 1);
-        newOrder.splice(dropIdx, 0, item);
-        
-        setSectionOrder(newOrder);
-        localStorage.setItem("dashboard_layout", JSON.stringify(newOrder));
-        handleDragEnd();
-    };
-
-    const handleDragEnd = () => {
-        setDraggedIdx(null);
-        setDragOverIdx(null);
     };
 
     const renderSection = (key: string) => {
         switch (key) {
             case "calendar":
                 return <MiniCalendar diaryDates={diaryDates} onDateClick={(dateKey) => router.push(`/diary/history?date=${dateKey}`)} />;
-            case "stats":
-                return (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
-                            <BarChart3 size={15} className="text-teal-500" />
-                            今月の統計
-                        </h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-3 text-center">
-                                <p className="text-2xl font-extrabold text-teal-700 dark:text-teal-300">
-                                    {thisMonthDiaries.length}
-                                    <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
-                                        /{daysElapsed}日
-                                    </span>
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">記録日数</p>
-                            </div>
-                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                                <p className="text-2xl font-extrabold text-blue-700 dark:text-blue-300">
-                                    {totalChars.toLocaleString()}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">総文字数</p>
-                            </div>
-                        </div>
-                    </div>
-                );
             case "mood":
                 return <MoodChart data={moodData} isLoading={isMoodLoading} />;
             case "comment":
@@ -576,42 +589,39 @@ export default function DashboardContent() {
                 </div>
 
                 {/* --- 並べ替え可能なセクション --- */}
-                <div className={`space-y-4 ${isEditMode ? "pb-10" : ""}`}>
-                    {sectionOrder.map((key, idx) => {
-                        const isDragging = draggedIdx === idx;
-                        const isDragOver = dragOverIdx === idx;
-                        
-                        return (
-                            <div
-                                key={key}
-                                draggable={isEditMode}
-                                onDragStart={(e) => handleDragStart(e, idx)}
-                                onDragEnter={(e) => handleDragEnter(e, idx)}
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleDrop(e, idx)}
-                                onDragEnd={handleDragEnd}
-                                className={`relative transition-all duration-300 ${
-                                    isEditMode ? "cursor-grab active:cursor-grabbing border flex-col rounded-xl border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/30 dark:bg-teal-900/10 p-1" : ""
-                                } ${isDragging ? "opacity-30 scale-95" : "opacity-100 scale-100"} ${
-                                    isDragOver && dragOverIdx < (draggedIdx ?? 0) ? "border-t-4 border-t-amber-400 dark:border-t-amber-500 pt-4" : ""
-                                } ${
-                                    isDragOver && dragOverIdx > (draggedIdx ?? 0) ? "border-b-4 border-b-amber-400 dark:border-b-amber-500 pb-4" : ""
-                                }`}
-                            >
-                                {/* 編集モード: ドラッグハンドル */}
-                                {isEditMode && (
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-white dark:bg-slate-700 px-3 py-1 rounded-full shadow-md border border-stone-200 dark:border-slate-600 flex items-center justify-center pointer-events-none">
-                                        <GripHorizontal size={16} className="text-slate-400 dark:text-slate-500" />
+                <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext 
+                        items={sectionOrder}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className={`space-y-4 ${isEditMode ? "pt-4 pb-12" : ""}`}>
+                            {sectionOrder.map((key) => {
+                                const content = renderSection(key);
+                                // DndKitで要素が消えると面倒なため、空要素の場合は非表示なブロックを返す
+                                if (!content) {
+                                    return (
+                                        <div key={key} className="hidden">
+                                            <SortableSection id={key} isEditMode={false}>
+                                                <div />
+                                            </SortableSection>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div key={key}>
+                                        <SortableSection id={key} isEditMode={isEditMode}>
+                                            {content}
+                                        </SortableSection>
                                     </div>
-                                )}
-                                
-                                <div className={`${isEditMode ? "pointer-events-none" : ""}`}>
-                                    {renderSection(key)}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                );
+                            })}
+                        </div>
+                    </SortableContext>
+                </DndContext>
 
                 <div className="pb-4" />
             </div>
