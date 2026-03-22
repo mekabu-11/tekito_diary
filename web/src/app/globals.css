@@ -4,11 +4,27 @@
  * アプリケーション全体に適用されるスタイル定義。
  * Tailwind CSS のインポートと、react-calendar ライブラリのスタイルオーバーライドを含む。
  * ダークモード対応のスタイルも定義。
+ *
+ * デザインシステム:
+ * - フォント: Zen Kaku Gothic New（本文）/ Zen Maru Gothic（見出し）
+ * - カラー: teal アクセント + stone/slate ベース
  */
 @import "tailwindcss";
 
 /* Tailwind CSS 4: class ベースの dark モード（.dark クラスで切り替え） */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ===================================
+   フォント設定
+   =================================== */
+
+body {
+  font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Zen Maru Gothic", "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", sans-serif;
+}
 
 /* ===================================
    react-calendar カスタムスタイル
@@ -19,48 +35,50 @@
 .calendar-wrapper .react-calendar {
   width: 100%;
   border: none;
-  font-family: inherit;
-  border-radius: 16px;
+  font-family: "Zen Kaku Gothic New", sans-serif;
+  border-radius: 12px;
+  background: transparent;
 }
 
 /* ナビゲーションボタン（月切替の矢印・月名表示） */
 .calendar-wrapper .react-calendar__navigation button {
   font-size: 14px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #1e293b;
+  font-family: "Zen Maru Gothic", sans-serif;
 }
 
 /* 各日付タイル: 角丸でクリッカブルに */
 .calendar-wrapper .react-calendar__tile {
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 10px 6px;
   font-size: 13px;
 }
 
-/* 選択中の日付タイル: エメラルドグリーンのハイライト */
+/* 選択中の日付タイル: teal のハイライト */
 .calendar-wrapper .react-calendar__tile--active {
-  background: #10B981 !important;
+  background: #0D9488 !important;
   color: white;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
-/* 今日の日付タイル: 薄いグリーンの背景 */
+/* 今日の日付タイル: 薄い teal の背景 */
 .calendar-wrapper .react-calendar__tile--now {
-  background: #D1FAE5;
-  border-radius: 12px;
+  background: #CCFBF1;
+  border-radius: 10px;
 }
 
-/* ホバー時の日付タイル: やや濃いグリーン */
+/* ホバー時の日付タイル */
 .calendar-wrapper .react-calendar__tile:hover {
-  background: #A7F3D0;
-  border-radius: 12px;
+  background: #99F6E4;
+  border-radius: 10px;
 }
 
 /* 曜日ヘッダー（月・火・水...）のスタイル */
 .calendar-wrapper .react-calendar__month-view__weekdays {
   font-size: 11px;
   font-weight: 600;
-  color: #8888A0;
+  color: #94a3b8;
 }
 
 /* ===================================
@@ -71,36 +89,49 @@
   color: #e2e8f0;
 }
 
+.dark .calendar-wrapper .react-calendar__tile {
+  color: #cbd5e1;
+}
+
+.dark .calendar-wrapper .react-calendar__tile--active {
+  background: #0D9488 !important;
+  color: white;
+}
+
 .dark .calendar-wrapper .react-calendar__tile--now {
-  background: #065f46;
+  background: #134e4a;
 }
 
 .dark .calendar-wrapper .react-calendar__tile:hover {
-  background: #064e3b;
+  background: #115e59;
 }
 
 .dark .calendar-wrapper .react-calendar__month-view__weekdays {
-  color: #94a3b8;
+  color: #64748b;
+}
+
+/* 隣接月の日付をダークモードで薄く */
+.dark .calendar-wrapper .react-calendar__month-view__days__day--neighboringMonth {
+  color: #475569;
 }
 
 /* ===================================
-   ダッシュボードカード共通スタイル
+   ローディングアニメーション
    =================================== */
 
-/* スケルトンローディングアニメーション */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #e7e5e4 25%, #d6d3d1 50%, #e7e5e4 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
 }
 
 .dark .skeleton {
-  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
   background-size: 200% 100%;
 }

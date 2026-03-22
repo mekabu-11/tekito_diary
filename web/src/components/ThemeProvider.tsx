@@ -8,6 +8,7 @@
  */
 "use client";
 
+import { Moon, Sun } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
@@ -31,26 +32,25 @@ export function ThemeToggle() {
     return (
         <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-slate-700 transition"
             title={theme === "dark" ? "ライトモードに切替" : "ダークモードに切替"}
         >
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? (
+                <Sun size={18} className="text-amber-400" />
+            ) : (
+                <Moon size={18} className="text-slate-500" />
+            )}
         </button>
     );
 }
 
 /**
  * テーマプロバイダーコンポーネント
- *
- * layout.tsx で <body> 内に配置し、全ページにテーマ情報を提供する。
- * 初期レンダリング時のちらつき（FOUC）を防ぐため、
- * マウント前は children を非表示にしない（SSR互換）。
  */
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>("light");
     const [mounted, setMounted] = useState(false);
 
-    // 初期化: localStorage → システム設定 の優先順位でテーマを決定
     useEffect(() => {
         const stored = localStorage.getItem("theme") as Theme | null;
         if (stored === "light" || stored === "dark") {
@@ -61,7 +61,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         setMounted(true);
     }, []);
 
-    // テーマ変更時に <html> のクラスと localStorage を更新
     useEffect(() => {
         if (!mounted) return;
         const root = document.documentElement;
@@ -73,7 +72,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         localStorage.setItem("theme", theme);
     }, [theme, mounted]);
 
-    /** ライト ↔ ダーク を切り替える */
     const toggleTheme = () => {
         setTheme((prev) => (prev === "light" ? "dark" : "light"));
     };
