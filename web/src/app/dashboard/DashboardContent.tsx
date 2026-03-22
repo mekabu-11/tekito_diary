@@ -27,8 +27,7 @@ import {
     BookOpen,
     Bookmark,
     Calendar,
-    ChevronDown,
-    ChevronUp,
+    GripHorizontal,
     Loader2,
     LogOut,
     MessageCircle,
@@ -121,6 +120,8 @@ export default function DashboardContent() {
 
     // --- 並べ替え状態 ---
     const [isEditMode, setIsEditMode] = useState(false);
+    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
     const [sectionOrder, setSectionOrder] = useState<string[]>([
         "calendar", "stats", "mood", "comment", "report", "random"
     ]);
@@ -325,17 +326,45 @@ export default function DashboardContent() {
     };
 
     // ========================================
-    // 並べ替え・表示ハンドラ
+    // 並べ替え・表示ハンドラ (Drag and Drop)
     // ========================================
 
-    const moveSection = (idx: number, direction: -1 | 1) => {
-        if (idx + direction < 0 || idx + direction >= sectionOrder.length) return;
+    const handleDragStart = (e: React.DragEvent, idx: number) => {
+        setDraggedIdx(idx);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleDragEnter = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        if (draggedIdx !== null && draggedIdx !== idx) {
+            setDragOverIdx(idx);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIdx: number) => {
+        e.preventDefault();
+        if (draggedIdx === null || draggedIdx === dropIdx) {
+            handleDragEnd();
+            return;
+        }
+
         const newOrder = [...sectionOrder];
-        const temp = newOrder[idx];
-        newOrder[idx] = newOrder[idx + direction];
-        newOrder[idx + direction] = temp;
+        const item = newOrder[draggedIdx];
+        newOrder.splice(draggedIdx, 1);
+        newOrder.splice(dropIdx, 0, item);
+        
         setSectionOrder(newOrder);
         localStorage.setItem("dashboard_layout", JSON.stringify(newOrder));
+        handleDragEnd();
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIdx(null);
+        setDragOverIdx(null);
     };
 
     const renderSection = (key: string) => {
@@ -547,30 +576,42 @@ export default function DashboardContent() {
                 </div>
 
                 {/* --- 並べ替え可能なセクション --- */}
-                {sectionOrder.map((key, idx) => (
-                    <div key={key} className="relative">
-                        {/* 編集モード: 上下ボタン */}
-                        {isEditMode && (
-                            <div className="absolute -top-2 right-2 z-10 flex items-center gap-1 bg-white dark:bg-slate-700 rounded-full shadow-md px-1 py-0.5 border border-stone-200 dark:border-slate-600">
-                                <button
-                                    onClick={() => moveSection(idx, -1)}
-                                    disabled={idx === 0}
-                                    className="p-1 rounded-full hover:bg-stone-100 dark:hover:bg-slate-600 transition disabled:opacity-30"
-                                >
-                                    <ChevronUp size={14} className="text-slate-500 dark:text-slate-400" />
-                                </button>
-                                <button
-                                    onClick={() => moveSection(idx, 1)}
-                                    disabled={idx === sectionOrder.length - 1}
-                                    className="p-1 rounded-full hover:bg-stone-100 dark:hover:bg-slate-600 transition disabled:opacity-30"
-                                >
-                                    <ChevronDown size={14} className="text-slate-500 dark:text-slate-400" />
-                                </button>
+                <div className={`space-y-4 ${isEditMode ? "pb-10" : ""}`}>
+                    {sectionOrder.map((key, idx) => {
+                        const isDragging = draggedIdx === idx;
+                        const isDragOver = dragOverIdx === idx;
+                        
+                        return (
+                            <div
+                                key={key}
+                                draggable={isEditMode}
+                                onDragStart={(e) => handleDragStart(e, idx)}
+                                onDragEnter={(e) => handleDragEnter(e, idx)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, idx)}
+                                onDragEnd={handleDragEnd}
+                                className={`relative transition-all duration-300 ${
+                                    isEditMode ? "cursor-grab active:cursor-grabbing border flex-col rounded-xl border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/30 dark:bg-teal-900/10 p-1" : ""
+                                } ${isDragging ? "opacity-30 scale-95" : "opacity-100 scale-100"} ${
+                                    isDragOver && dragOverIdx < (draggedIdx ?? 0) ? "border-t-4 border-t-amber-400 dark:border-t-amber-500 pt-4" : ""
+                                } ${
+                                    isDragOver && dragOverIdx > (draggedIdx ?? 0) ? "border-b-4 border-b-amber-400 dark:border-b-amber-500 pb-4" : ""
+                                }`}
+                            >
+                                {/* 編集モード: ドラッグハンドル */}
+                                {isEditMode && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-white dark:bg-slate-700 px-3 py-1 rounded-full shadow-md border border-stone-200 dark:border-slate-600 flex items-center justify-center pointer-events-none">
+                                        <GripHorizontal size={16} className="text-slate-400 dark:text-slate-500" />
+                                    </div>
+                                )}
+                                
+                                <div className={`${isEditMode ? "pointer-events-none" : ""}`}>
+                                    {renderSection(key)}
+                                </div>
                             </div>
-                        )}
-                        {renderSection(key)}
-                    </div>
-                ))}
+                        );
+                    })}
+                </div>
 
                 <div className="pb-4" />
             </div>
