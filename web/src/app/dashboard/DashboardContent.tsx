@@ -37,9 +37,10 @@ import {
     Shield,
     Shuffle,
     Sun,
+    TrendingUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
     DndContext,
     closestCenter,
@@ -108,45 +109,40 @@ function setCachedData<T>(key: string, dateKey: string, data: T): void {
     localStorage.setItem(key, JSON.stringify({ dateKey, data }));
 }
 
-// ========== Sortable Component ==========
+// ========== Toggle & Edit Components ==========
 
-function SortableSection({ id, isEditMode, children }: { id: string; isEditMode: boolean; children: React.ReactNode }) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({ id, disabled: !isEditMode });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 10 : 1,
-    };
-
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
     return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            className={`relative transition-opacity duration-200 ${
-                isEditMode ? "border flex-col rounded-xl border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/30 dark:bg-teal-900/10 p-1" : ""
-            } ${isDragging ? "opacity-40" : "opacity-100"}`}
+        <button
+            onClick={() => onChange(!enabled)}
+            className={`w-11 h-6 rounded-full transition-colors flex items-center px-1 shrink-0 ${
+                enabled ? "bg-teal-500" : "bg-stone-300 dark:bg-slate-600"
+            }`}
         >
-            {isEditMode && (
-                <div 
-                    {...attributes} 
-                    {...listeners}
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-white dark:bg-slate-700 px-6 py-1.5 rounded-full shadow-md border border-stone-200 dark:border-slate-600 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-stone-50 dark:hover:bg-slate-600 transition"
-                    style={{ touchAction: 'none' }} /* prevent scrolling while dragging */
-                >
-                    <GripHorizontal size={18} className="text-slate-400 dark:text-slate-500" />
+            <div
+                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    enabled ? "translate-x-5" : "translate-x-0"
+                }`}
+            />
+        </button>
+    );
+}
+
+function SortableWidgetRow({ id, enabled, onToggle, title, icon }: { id: string; enabled: boolean; onToggle: (v: boolean) => void; title: string; icon: React.ReactNode }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : 1 };
+    return (
+        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-stone-200 dark:border-slate-700 ${isDragging ? "opacity-50" : ""}`}>
+            <div className="flex items-center gap-3">
+                <div {...attributes} {...listeners} className="p-2 cursor-grab active:cursor-grabbing text-slate-400 dark:text-slate-500 hover:bg-stone-100 dark:hover:bg-slate-700 rounded-lg touch-none" style={{ touchAction: 'none' }}>
+                    <GripHorizontal size={18} />
                 </div>
-            )}
-            <div className={`${isEditMode ? "pointer-events-none opacity-60" : ""}`}>
-                {children}
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold text-sm">
+                    {icon}
+                    {title}
+                </div>
             </div>
+            <Toggle enabled={enabled} onChange={onToggle} />
         </div>
     );
 }
@@ -178,9 +174,16 @@ export default function DashboardContent() {
 
     // --- 並べ替え状態 ---
     const [isEditMode, setIsEditMode] = useState(false);
-    const [sectionOrder, setSectionOrder] = useState<string[]>([
-        "calendar", "mood", "comment", "report", "random"
+    const [widgets, setWidgets] = useState<{ id: string; enabled: boolean }[]>([
+        { id: "mood", enabled: true },
+        { id: "comment", enabled: true },
+        { id: "report", enabled: false },
+        { id: "random", enabled: true },
     ]);
+
+    // --- カルーセル状態 ---
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
 
     const todayKey = toDateKey(new Date());
     const greeting = getGreeting();
@@ -190,10 +193,10 @@ export default function DashboardContent() {
     // ========================================
 
     useEffect(() => {
-        const savedOrder = localStorage.getItem("dashboard_layout");
-        if (savedOrder) {
+        const savedWidgets = localStorage.getItem("dashboard_widgets");
+        if (savedWidgets) {
             try {
-                setSectionOrder(JSON.parse(savedOrder));
+                setWidgets(JSON.parse(savedWidgets));
             } catch { /* ignore */ }
         }
         loadInitialData();
@@ -382,34 +385,56 @@ export default function DashboardContent() {
     };
 
     // ========================================
-    // 並べ替え・表示ハンドラ (dnd-kit)
+    // カスタマイズ・カルーセルハンドラ
     // ========================================
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, // タッチデバイスでスクロールとドラッグを区別するため、5px動かした時のみドラッグ開始
+                distance: 5,
             },
         })
     );
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
         if (over && active.id !== over.id) {
-            const oldIndex = sectionOrder.indexOf(active.id as string);
-            const newIndex = sectionOrder.indexOf(over.id as string);
+            const oldIndex = widgets.findIndex(w => w.id === active.id);
+            const newIndex = widgets.findIndex(w => w.id === over.id);
             
-            const newOrder = arrayMove(sectionOrder, oldIndex, newIndex);
-            setSectionOrder(newOrder);
-            localStorage.setItem("dashboard_layout", JSON.stringify(newOrder));
+            const newArray = arrayMove(widgets, oldIndex, newIndex);
+            setWidgets(newArray);
+            localStorage.setItem("dashboard_widgets", JSON.stringify(newArray));
+        }
+    };
+
+    const toggleWidget = (id: string, enabled: boolean) => {
+        const newArray = widgets.map(w => w.id === id ? { ...w, enabled } : w);
+        setWidgets(newArray);
+        localStorage.setItem("dashboard_widgets", JSON.stringify(newArray));
+    };
+
+    const handleScroll = () => {
+        if (!carouselRef.current) return;
+        const scrollLeft = carouselRef.current.scrollLeft;
+        const width = carouselRef.current.clientWidth;
+        if (width === 0) return;
+        const index = Math.round(scrollLeft / width);
+        setActiveIndex(index);
+    };
+
+    const getWidgetInfo = (id: string) => {
+        switch (id) {
+            case "mood": return { title: "気分トレンド", icon: <TrendingUp size={16} className="text-teal-500" /> };
+            case "comment": return { title: "AIからのアドバイス", icon: <MessageCircle size={16} className="text-teal-500" /> };
+            case "report": return { title: "先週の振り返り", icon: <BookOpen size={16} className="text-teal-500" /> };
+            case "random": return { title: "過去の日記ピックアップ", icon: <Bookmark size={16} className="text-amber-500" /> };
+            default: return { title: id, icon: <Settings2 size={16} /> };
         }
     };
 
     const renderSection = (key: string) => {
         switch (key) {
-            case "calendar":
-                return <MiniCalendar diaryDates={diaryDates} onDateClick={(dateKey) => router.push(`/diary/history?date=${dateKey}`)} />;
             case "mood":
                 return <MoodChart data={moodData} isLoading={isMoodLoading} />;
             case "comment":
@@ -418,7 +443,7 @@ export default function DashboardContent() {
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
                             <MessageCircle size={15} className="text-teal-500" />
-                            AIからの一言
+                            AIからのアドバイス
                         </h3>
                         {isCommentLoading ? (
                             <div className="flex items-center gap-2">
@@ -588,40 +613,63 @@ export default function DashboardContent() {
                     </button>
                 </div>
 
-                {/* --- 並べ替え可能なセクション --- */}
-                <DndContext 
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                >
-                    <SortableContext 
-                        items={sectionOrder}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <div className={`space-y-4 ${isEditMode ? "pt-4 pb-12" : ""}`}>
-                            {sectionOrder.map((key) => {
-                                const content = renderSection(key);
-                                // DndKitで要素が消えると面倒なため、空要素の場合は非表示なブロックを返す
-                                if (!content) {
+                {/* --- カレンダー（固定） --- */}
+                {!isEditMode && (
+                    <div className="mb-2">
+                        <MiniCalendar diaryDates={diaryDates} onDateClick={(dateKey) => router.push(`/diary/history?date=${dateKey}`)} />
+                    </div>
+                )}
+
+                {/* --- ウィジェットエリア --- */}
+                {isEditMode ? (
+                    <div className="space-y-3 pt-6 border-t border-stone-200 dark:border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 px-2 flex items-center gap-1.5 mb-4">
+                            <Settings2 size={16} />
+                            ダッシュボードのカスタマイズ
+                        </h3>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={widgets.map(w => w.id)} strategy={verticalListSortingStrategy}>
+                                {widgets.map(w => {
+                                    const info = getWidgetInfo(w.id);
                                     return (
-                                        <div key={key} className="hidden">
-                                            <SortableSection id={key} isEditMode={false}>
-                                                <div />
-                                            </SortableSection>
-                                        </div>
+                                        <SortableWidgetRow 
+                                            key={w.id} 
+                                            id={w.id} 
+                                            enabled={w.enabled} 
+                                            onToggle={(v) => toggleWidget(w.id, v)} 
+                                            title={info.title} 
+                                            icon={info.icon} 
+                                        />
                                     );
-                                }
-                                return (
-                                    <div key={key}>
-                                        <SortableSection id={key} isEditMode={isEditMode}>
-                                            {content}
-                                        </SortableSection>
+                                })}
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+                ) : (
+                    widgets.filter(w => w.enabled).length > 0 && (
+                        <div className="relative pt-2 -mx-4 px-4 overflow-hidden">
+                            <div 
+                                className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-2"
+                                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                ref={carouselRef}
+                                onScroll={handleScroll}
+                            >
+                                {widgets.filter(w => w.enabled).map(w => (
+                                    <div key={w.id} className="snap-center shrink-0 w-[92%] max-w-[340px]">
+                                        {renderSection(w.id)}
                                     </div>
-                                );
-                            })}
+                                ))}
+                            </div>
+                            {widgets.filter(w => w.enabled).length > 1 && (
+                                <div className="flex justify-center gap-1.5 mt-2 transition-all">
+                                    {widgets.filter(w => w.enabled).map((_, i) => (
+                                        <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === activeIndex ? "w-4 bg-teal-500" : "w-1.5 bg-stone-300 dark:bg-slate-600"}`} />
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    </SortableContext>
-                </DndContext>
+                    )
+                )}
 
                 <div className="pb-4" />
             </div>
