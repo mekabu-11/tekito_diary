@@ -27,12 +27,12 @@ const MOOD_LABEL: Record<number, string> = {
 export default function MoodChart({ data, isLoading }: MoodChartProps) {
     if (isLoading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5 shrink-0">
                     <TrendingUp size={15} className="text-teal-500" />
                     気分トレンド
                 </h3>
-                <div className="flex items-center justify-center h-28">
+                <div className="flex items-center justify-center h-28 flex-1">
                     <div className="animate-pulse flex gap-2">
                         {[...Array(7)].map((_, i) => (
                             <div key={i} className="w-6 h-12 bg-stone-200 dark:bg-slate-700 rounded" />
@@ -45,14 +45,16 @@ export default function MoodChart({ data, isLoading }: MoodChartProps) {
 
     if (data.length === 0) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5 shrink-0">
                     <TrendingUp size={15} className="text-teal-500" />
                     気分トレンド
                 </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">
-                    日記を書くと気分の変化がグラフで表示されます
-                </p>
+                <div className="flex-1 flex items-center justify-center">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">
+                        日記を書くと気分の変化がグラフで表示されます
+                    </p>
+                </div>
             </div>
         );
     }
@@ -75,13 +77,13 @@ export default function MoodChart({ data, isLoading }: MoodChartProps) {
     const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - padY} L ${points[0].x} ${height - padY} Z`;
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5 shrink-0">
                 <TrendingUp size={15} className="text-teal-500" />
                 気分トレンド
             </h3>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center flex-1 items-center">
                 <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[300px]">
                     <defs>
                         <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">

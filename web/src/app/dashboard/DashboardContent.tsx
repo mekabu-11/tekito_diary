@@ -440,18 +440,18 @@ export default function DashboardContent() {
             case "comment":
                 if (!isCommentLoading && !aiComment) return null;
                 return (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5 shrink-0">
                             <MessageCircle size={15} className="text-teal-500" />
                             AIからのアドバイス
                         </h3>
                         {isCommentLoading ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-1">
                                 <Loader2 size={14} className="animate-spin text-slate-400" />
                                 <span className="text-xs text-slate-400">考え中...</span>
                             </div>
                         ) : (
-                            <div className="bg-teal-50 dark:bg-teal-900/15 rounded-lg p-3">
+                            <div className="bg-teal-50 dark:bg-teal-900/15 rounded-lg p-3 flex-1 overflow-y-auto">
                                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                                     {aiComment}
                                 </p>
@@ -462,18 +462,18 @@ export default function DashboardContent() {
             case "report":
                 if (!isReportLoading && !weeklyReport) return null;
                 return (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5 shrink-0">
                             <BookOpen size={15} className="text-teal-500" />
                             先週の振り返り
                         </h3>
                         {isReportLoading ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-1">
                                 <Loader2 size={14} className="animate-spin text-slate-400" />
                                 <span className="text-xs text-slate-400">レポートを生成中...</span>
                             </div>
                         ) : (
-                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto">
                                 {weeklyReport}
                             </p>
                         )}
@@ -482,8 +482,8 @@ export default function DashboardContent() {
             case "random":
                 if (!randomDiary) return null;
                 return (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <div className="flex items-center justify-between mb-2">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-2 shrink-0">
                             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                                 <Bookmark size={15} className="text-amber-500" />
                                 過去の日記ピックアップ
@@ -498,16 +498,16 @@ export default function DashboardContent() {
                         </div>
                         <div
                             onClick={() => router.push(`/diary/history?date=${randomDiary.date}`)}
-                            className="bg-amber-50 dark:bg-amber-900/15 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/25 transition"
+                            className="bg-amber-50 dark:bg-amber-900/15 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/25 transition flex-1 flex flex-col"
                         >
-                            <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1">
+                            <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1 shrink-0">
                                 {randomDiary.display_date}
                             </p>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3">
+                            <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3 flex-1 mt-1">
                                 {randomDiary.formatted_text.slice(0, 100)}
                                 {randomDiary.formatted_text.length > 100 ? "..." : ""}
                             </p>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-semibold">
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-semibold shrink-0">
                                 続きを見る →
                             </p>
                         </div>
@@ -649,13 +649,13 @@ export default function DashboardContent() {
                     widgets.filter(w => w.enabled).length > 0 && (
                         <div className="relative pt-2 -mx-4 px-4 overflow-hidden">
                             <div 
-                                className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-2"
+                                className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-2 items-stretch"
                                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                 ref={carouselRef}
                                 onScroll={handleScroll}
                             >
                                 {widgets.filter(w => w.enabled).map(w => (
-                                    <div key={w.id} className="snap-center shrink-0 w-[92%] max-w-[340px]">
+                                    <div key={w.id} className="snap-center shrink-0 w-[92%] max-w-[340px] flex flex-col">
                                         {renderSection(w.id)}
                                     </div>
                                 ))}
