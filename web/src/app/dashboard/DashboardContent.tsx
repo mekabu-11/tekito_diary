@@ -655,7 +655,7 @@ export default function DashboardContent() {
                                 onScroll={handleScroll}
                             >
                                 {widgets.filter(w => w.enabled).map(w => (
-                                    <div key={w.id} className="snap-center shrink-0 w-[92%] max-w-[340px] flex flex-col">
+                                    <div key={w.id} className="snap-center shrink-0 w-[92%] max-w-[340px] flex [&>div]:w-full [&>div]:flex-1">
                                         {renderSection(w.id)}
                                     </div>
                                 ))}
