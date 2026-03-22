@@ -301,11 +301,18 @@ export default function HistoryContent() {
     return (
         <div className="min-h-screen bg-stone-50 dark:bg-slate-900 transition-colors duration-300">
             {/* ヘッダー */}
-            <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
-                <button onClick={() => router.push("/dashboard")} className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-slate-700 transition">
-                    <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" />
+            <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+                <button onClick={() => router.push("/dashboard")} className="text-left group outline-none">
+                    <h1 className="text-lg font-extrabold text-slate-800 dark:text-white transition group-hover:text-teal-600 dark:group-hover:text-teal-400">
+                        てきとー日記
+                    </h1>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 transition group-hover:text-teal-500">
+                        ← ダッシュボードに戻る
+                    </p>
                 </button>
-                <h1 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">日記カレンダー</h1>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-stone-100 dark:bg-slate-700 px-2 py-1 rounded-lg">
+                    カレンダー
+                </span>
             </header>
 
             <div className="max-w-lg mx-auto p-4 space-y-4">

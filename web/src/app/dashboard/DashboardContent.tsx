@@ -27,11 +27,14 @@ import {
     BookOpen,
     Bookmark,
     Calendar,
+    ChevronDown,
+    ChevronUp,
     Loader2,
     LogOut,
     MessageCircle,
     Moon,
     PenLine,
+    Settings2,
     Shield,
     Shuffle,
     Sun,
@@ -116,6 +119,12 @@ export default function DashboardContent() {
     // --- ランダム日記 ---
     const [randomDiary, setRandomDiary] = useState<Diary | null>(null);
 
+    // --- 並べ替え状態 ---
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [sectionOrder, setSectionOrder] = useState<string[]>([
+        "calendar", "stats", "mood", "comment", "report", "random"
+    ]);
+
     const todayKey = toDateKey(new Date());
     const greeting = getGreeting();
 
@@ -124,6 +133,12 @@ export default function DashboardContent() {
     // ========================================
 
     useEffect(() => {
+        const savedOrder = localStorage.getItem("dashboard_layout");
+        if (savedOrder) {
+            try {
+                setSectionOrder(JSON.parse(savedOrder));
+            } catch { /* ignore */ }
+        }
         loadInitialData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -310,6 +325,133 @@ export default function DashboardContent() {
     };
 
     // ========================================
+    // 並べ替え・表示ハンドラ
+    // ========================================
+
+    const moveSection = (idx: number, direction: -1 | 1) => {
+        if (idx + direction < 0 || idx + direction >= sectionOrder.length) return;
+        const newOrder = [...sectionOrder];
+        const temp = newOrder[idx];
+        newOrder[idx] = newOrder[idx + direction];
+        newOrder[idx + direction] = temp;
+        setSectionOrder(newOrder);
+        localStorage.setItem("dashboard_layout", JSON.stringify(newOrder));
+    };
+
+    const renderSection = (key: string) => {
+        switch (key) {
+            case "calendar":
+                return <MiniCalendar diaryDates={diaryDates} onDateClick={(dateKey) => router.push(`/diary/history?date=${dateKey}`)} />;
+            case "stats":
+                return (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+                            <BarChart3 size={15} className="text-teal-500" />
+                            今月の統計
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-3 text-center">
+                                <p className="text-2xl font-extrabold text-teal-700 dark:text-teal-300">
+                                    {thisMonthDiaries.length}
+                                    <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
+                                        /{daysElapsed}日
+                                    </span>
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">記録日数</p>
+                            </div>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                                <p className="text-2xl font-extrabold text-blue-700 dark:text-blue-300">
+                                    {totalChars.toLocaleString()}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">総文字数</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case "mood":
+                return <MoodChart data={moodData} isLoading={isMoodLoading} />;
+            case "comment":
+                if (!isCommentLoading && !aiComment) return null;
+                return (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                            <MessageCircle size={15} className="text-teal-500" />
+                            AIからの一言
+                        </h3>
+                        {isCommentLoading ? (
+                            <div className="flex items-center gap-2">
+                                <Loader2 size={14} className="animate-spin text-slate-400" />
+                                <span className="text-xs text-slate-400">考え中...</span>
+                            </div>
+                        ) : (
+                            <div className="bg-teal-50 dark:bg-teal-900/15 rounded-lg p-3">
+                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                    {aiComment}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                );
+            case "report":
+                if (!isReportLoading && !weeklyReport) return null;
+                return (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
+                            <BookOpen size={15} className="text-teal-500" />
+                            先週の振り返り
+                        </h3>
+                        {isReportLoading ? (
+                            <div className="flex items-center gap-2">
+                                <Loader2 size={14} className="animate-spin text-slate-400" />
+                                <span className="text-xs text-slate-400">レポートを生成中...</span>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                {weeklyReport}
+                            </p>
+                        )}
+                    </div>
+                );
+            case "random":
+                if (!randomDiary) return null;
+                return (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <Bookmark size={15} className="text-amber-500" />
+                                過去の日記ピックアップ
+                            </h3>
+                            <button
+                                onClick={shuffleRandomDiary}
+                                className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-slate-700 transition"
+                                title="シャッフル"
+                            >
+                                <Shuffle size={14} className="text-slate-400" />
+                            </button>
+                        </div>
+                        <div
+                            onClick={() => router.push(`/diary/history?date=${randomDiary.date}`)}
+                            className="bg-amber-50 dark:bg-amber-900/15 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/25 transition"
+                        >
+                            <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1">
+                                {randomDiary.display_date}
+                            </p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3">
+                                {randomDiary.formatted_text.slice(0, 100)}
+                                {randomDiary.formatted_text.length > 100 ? "..." : ""}
+                            </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-semibold">
+                                続きを見る →
+                            </p>
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    // ========================================
     // 統計データ計算
     // ========================================
 
@@ -358,6 +500,13 @@ export default function DashboardContent() {
                             <Moon size={18} className="text-slate-500" />
                         )}
                     </button>
+                    <button
+                        onClick={() => setIsEditMode((prev) => !prev)}
+                        className={`p-2 rounded-lg transition ${isEditMode ? "bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400" : "hover:bg-stone-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500"}`}
+                        title="ダッシュボードの並べ替え"
+                    >
+                        <Settings2 size={18} />
+                    </button>
                     {isAdmin && (
                         <button
                             onClick={() => router.push("/admin")}
@@ -379,7 +528,7 @@ export default function DashboardContent() {
             {/* ===== メインコンテンツ ===== */}
             <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
 
-                {/* --- アクションボタン（一番上） --- */}
+                {/* --- アクションボタン（一番上、並べ替え対象外） --- */}
                 <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={() => router.push("/diary")}
@@ -397,112 +546,31 @@ export default function DashboardContent() {
                     </button>
                 </div>
 
-                {/* --- ミニカレンダー --- */}
-                <MiniCalendar diaryDates={diaryDates} onDateClick={(dateKey) => router.push(`/diary/history?date=${dateKey}`)} />
-
-                {/* --- 月間統計 --- */}
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
-                        <BarChart3 size={15} className="text-teal-500" />
-                        今月の統計
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-3 text-center">
-                            <p className="text-2xl font-extrabold text-teal-700 dark:text-teal-300">
-                                {thisMonthDiaries.length}
-                                <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
-                                    /{daysElapsed}日
-                                </span>
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">記録日数</p>
-                        </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                            <p className="text-2xl font-extrabold text-blue-700 dark:text-blue-300">
-                                {totalChars.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">総文字数</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* --- 気分トレンド --- */}
-                <MoodChart data={moodData} isLoading={isMoodLoading} />
-
-                {/* --- AIからの一言 --- */}
-                {(isCommentLoading || aiComment) && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
-                            <MessageCircle size={15} className="text-teal-500" />
-                            AIからの一言
-                        </h3>
-                        {isCommentLoading ? (
-                            <div className="flex items-center gap-2">
-                                <Loader2 size={14} className="animate-spin text-slate-400" />
-                                <span className="text-xs text-slate-400">考え中...</span>
-                            </div>
-                        ) : (
-                            <div className="bg-teal-50 dark:bg-teal-900/15 rounded-lg p-3">
-                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                                    {aiComment}
-                                </p>
+                {/* --- 並べ替え可能なセクション --- */}
+                {sectionOrder.map((key, idx) => (
+                    <div key={key} className="relative">
+                        {/* 編集モード: 上下ボタン */}
+                        {isEditMode && (
+                            <div className="absolute -top-2 right-2 z-10 flex items-center gap-1 bg-white dark:bg-slate-700 rounded-full shadow-md px-1 py-0.5 border border-stone-200 dark:border-slate-600">
+                                <button
+                                    onClick={() => moveSection(idx, -1)}
+                                    disabled={idx === 0}
+                                    className="p-1 rounded-full hover:bg-stone-100 dark:hover:bg-slate-600 transition disabled:opacity-30"
+                                >
+                                    <ChevronUp size={14} className="text-slate-500 dark:text-slate-400" />
+                                </button>
+                                <button
+                                    onClick={() => moveSection(idx, 1)}
+                                    disabled={idx === sectionOrder.length - 1}
+                                    className="p-1 rounded-full hover:bg-stone-100 dark:hover:bg-slate-600 transition disabled:opacity-30"
+                                >
+                                    <ChevronDown size={14} className="text-slate-500 dark:text-slate-400" />
+                                </button>
                             </div>
                         )}
+                        {renderSection(key)}
                     </div>
-                )}
-
-                {/* --- 週間振り返りレポート --- */}
-                {(isReportLoading || weeklyReport) && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
-                            <BookOpen size={15} className="text-teal-500" />
-                            先週の振り返り
-                        </h3>
-                        {isReportLoading ? (
-                            <div className="flex items-center gap-2">
-                                <Loader2 size={14} className="animate-spin text-slate-400" />
-                                <span className="text-xs text-slate-400">レポートを生成中...</span>
-                            </div>
-                        ) : (
-                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                                {weeklyReport}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                {/* --- ランダム過去日記 --- */}
-                {randomDiary && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                                <Bookmark size={15} className="text-amber-500" />
-                                過去の日記ピックアップ
-                            </h3>
-                            <button
-                                onClick={shuffleRandomDiary}
-                                className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-slate-700 transition"
-                                title="シャッフル"
-                            >
-                                <Shuffle size={14} className="text-slate-400" />
-                            </button>
-                        </div>
-                        <div
-                            onClick={() => router.push(`/diary/history?date=${randomDiary.date}`)}
-                            className="bg-amber-50 dark:bg-amber-900/15 rounded-lg p-3 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/25 transition"
-                        >
-                            <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1">
-                                {randomDiary.display_date}
-                            </p>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3">
-                                {randomDiary.formatted_text.slice(0, 100)}
-                                {randomDiary.formatted_text.length > 100 ? "..." : ""}
-                            </p>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-semibold">
-                                続きを見る →
-                            </p>
-                        </div>
-                    </div>
-                )}
+                ))}
 
                 <div className="pb-4" />
             </div>
