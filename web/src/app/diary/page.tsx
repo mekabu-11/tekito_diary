@@ -24,7 +24,7 @@
 import FollowUpForm from "@/components/FollowUpForm";
 import { AI_MODELS, DEFAULT_MODEL } from "@/lib/models";
 import { createClient } from "@/lib/supabase";
-import { Calendar, ChevronLeft, ChevronRight, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Home, Loader2, LogOut, Shield, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -341,7 +341,10 @@ export default function DiaryPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* ===== ヘッダー: アプリ名、ユーザー名、管理者メニュー、ログアウト ===== */}
             <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-                <h1 className="text-lg font-extrabold text-gray-900">てきとー日記</h1>
+                <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 p-2 -ml-2 rounded-lg hover:bg-gray-100 transition">
+                    <Home size={20} className="text-emerald-500" />
+                    <span className="text-lg font-extrabold text-gray-900">てきとー日記</span>
+                </button>
                 <div className="flex items-center gap-2">
                     {/* ユーザー表示名 */}
                     {isPageLoading ? (

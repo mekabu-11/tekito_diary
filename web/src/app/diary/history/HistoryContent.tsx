@@ -388,7 +388,7 @@ export default function HistoryContent() {
         <div className="min-h-screen bg-gray-50">
             {/* ===== ヘッダー: 戻るボタンとタイトル ===== */}
             <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
-                <button onClick={() => router.push("/diary")} className="p-2 rounded-lg hover:bg-gray-100 transition">
+                <button onClick={() => router.push("/dashboard")} className="p-2 rounded-lg hover:bg-gray-100 transition">
                     <ArrowLeft size={20} className="text-gray-600" />
                 </button>
                 <h1 className="text-lg font-extrabold text-gray-900">日記カレンダー</h1>
