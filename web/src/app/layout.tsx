@@ -8,6 +8,7 @@
  * - メタデータ: アプリ名・説明・テーマカラーの定義
  * - ビューポート: モバイル対応のレスポンシブ設定
  * - テーマプロバイダー: ダーク/ライトモード切替のコンテキスト提供
+ * - Google Fonts: Zen Kaku Gothic New（本文） + Zen Maru Gothic（見出し）
  */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
@@ -30,14 +31,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#6C63FF",
+  themeColor: "#0D9488",
 };
 
 /**
  * 全ページを包むルートレイアウトコンポーネント
  * - lang="ja" で日本語ページとして設定
  * - ThemeProvider でダーク/ライトモードのコンテキストを提供
- * - グローバルCSSとTailwindの基本スタイルを適用
+ * - Google Fonts（Zen Kaku Gothic New / Zen Maru Gothic）を読み込み
  */
 export default function RootLayout({
   children,
@@ -47,6 +48,13 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
+        {/* Google Fonts: Zen Kaku Gothic New（本文）+ Zen Maru Gothic（見出し） */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap"
+          rel="stylesheet"
+        />
         {/* PWA: iOS ホーム画面アイコン */}
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         {/* テーマ初期化スクリプト: FOUC防止（ちらつき防止） */}
@@ -63,7 +71,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased transition-colors duration-300">
+      <body className="bg-stone-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
         <ThemeProvider>
           {children}
         </ThemeProvider>

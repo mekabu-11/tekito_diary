@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
 ルール:
 - 1文のみ（40文字以内）
-- 絵文字を1つだけ使ってOK
+- 絵文字は使わない
 - 説教や改善提案はしない
 - 日記の内容に具体的に触れる
 - 前置きや引用は不要、コメント本文のみ出力
@@ -50,7 +50,7 @@ ${texts.join("\n\n---\n\n")}`;
             messages: [{ role: "user", content: prompt }],
         });
 
-        const comment = result.choices[0].message.content?.trim() || "今日も素敵な一日を！✨";
+        const comment = result.choices[0].message.content?.trim() || "今日も素敵な一日を";
         return NextResponse.json({ comment });
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";
