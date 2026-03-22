@@ -11,6 +11,8 @@ import { Calendar, Flame } from "lucide-react";
 
 interface MiniCalendarProps {
     diaryDates: Set<string>;
+    /** 日付クリック時のコールバック（dateKeyを渡す） */
+    onDateClick?: (dateKey: string) => void;
 }
 
 const toDateKey = (d: Date) =>
@@ -32,7 +34,7 @@ function calcStreak(diaryDates: Set<string>): number {
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-export default function MiniCalendar({ diaryDates }: MiniCalendarProps) {
+export default function MiniCalendar({ diaryDates, onDateClick }: MiniCalendarProps) {
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth();
@@ -85,7 +87,9 @@ export default function MiniCalendar({ diaryDates }: MiniCalendarProps) {
                     return (
                         <div
                             key={dateKey}
+                            onClick={() => hasDiary && onDateClick?.(dateKey)}
                             className={`h-8 flex flex-col items-center justify-center rounded-lg text-xs relative
+                                ${hasDiary && onDateClick ? "cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/30 active:scale-95 transition" : ""}
                                 ${isToday ? "bg-teal-100 dark:bg-teal-900/40 font-bold text-teal-700 dark:text-teal-300" : "text-slate-600 dark:text-slate-400"}
                             `}
                         >

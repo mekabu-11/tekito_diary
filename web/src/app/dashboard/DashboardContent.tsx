@@ -27,13 +27,11 @@ import {
     BookOpen,
     Bookmark,
     Calendar,
-    CheckCircle,
     Loader2,
     LogOut,
     MessageCircle,
     Moon,
     PenLine,
-    RefreshCw,
     Shield,
     Shuffle,
     Sun,
@@ -166,7 +164,7 @@ export default function DashboardContent() {
 
     const loadAIData = async (allDiaries: Diary[]) => {
         const recent7 = allDiaries.slice(0, 7).reverse();
-        if (recent7.length >= 2) {
+        if (recent7.length >= 1) {
             loadMoodData(recent7);
         }
 
@@ -340,17 +338,13 @@ export default function DashboardContent() {
 
     return (
         <div className="min-h-screen bg-stone-50 dark:bg-slate-900 flex flex-col transition-colors duration-300">
-            {/* ===== ヘッダー ===== */}
+            {/* ===== ヘッダー: タイトル左端 ===== */}
             <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
                 <div>
-                    <p className="text-lg font-extrabold text-slate-800 dark:text-white">
-                        {greeting}
+                    <h1 className="text-lg font-extrabold text-slate-800 dark:text-white">てきとー日記</h1>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {greeting}{displayName ? `、${displayName}さん` : ""}
                     </p>
-                    {displayName && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {displayName}さん
-                        </p>
-                    )}
                 </div>
                 <div className="flex items-center gap-1.5">
                     <button
@@ -385,46 +379,26 @@ export default function DashboardContent() {
             {/* ===== メインコンテンツ ===== */}
             <div className="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
 
-                {/* --- 今日の日記ステータス --- */}
-                <div
-                    onClick={() =>
-                        router.push(todayDiary ? `/diary/history?date=${todayKey}` : "/diary")
-                    }
-                    className={`rounded-xl shadow-sm p-4 cursor-pointer transition-all active:scale-[0.98] border ${
-                        todayDiary
-                            ? "bg-teal-600 dark:bg-teal-700 text-white border-teal-600 dark:border-teal-700"
-                            : "bg-white dark:bg-slate-800 border-2 border-dashed border-stone-300 dark:border-slate-600"
-                    }`}
-                >
-                    {todayDiary ? (
-                        <>
-                            <div className="flex items-center gap-2 mb-1">
-                                <CheckCircle size={18} />
-                                <p className="text-sm font-bold">今日の日記を書きました</p>
-                            </div>
-                            <p className="text-xs opacity-80 line-clamp-2">
-                                {todayDiary.formatted_text.slice(0, 80)}...
-                            </p>
-                        </>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center">
-                                <PenLine size={20} className="text-teal-600 dark:text-teal-400" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white">
-                                    今日の日記を書こう
-                                </p>
-                                <p className="text-xs text-slate-400 dark:text-slate-500">
-                                    タップして日記を書き始める
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                {/* --- アクションボタン（一番上） --- */}
+                <div className="grid grid-cols-2 gap-3">
+                    <button
+                        onClick={() => router.push("/diary")}
+                        className="py-4 rounded-xl bg-teal-600 dark:bg-teal-500 text-white font-bold text-sm hover:bg-teal-700 dark:hover:bg-teal-600 transition flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 dark:shadow-teal-500/10"
+                    >
+                        <PenLine size={18} />
+                        日記を書く
+                    </button>
+                    <button
+                        onClick={() => router.push("/diary/history")}
+                        className="py-4 rounded-xl bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold text-sm hover:bg-teal-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-teal-200 dark:border-teal-800"
+                    >
+                        <Calendar size={18} />
+                        カレンダー
+                    </button>
                 </div>
 
                 {/* --- ミニカレンダー --- */}
-                <MiniCalendar diaryDates={diaryDates} />
+                <MiniCalendar diaryDates={diaryDates} onDateClick={(dateKey) => router.push(`/diary/history?date=${dateKey}`)} />
 
                 {/* --- 月間統計 --- */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
@@ -530,23 +504,7 @@ export default function DashboardContent() {
                     </div>
                 )}
 
-                {/* --- フッターナビ --- */}
-                <div className="grid grid-cols-2 gap-3 pt-2 pb-4">
-                    <button
-                        onClick={() => router.push("/diary")}
-                        className="py-4 rounded-xl bg-teal-600 dark:bg-teal-500 text-white font-bold text-sm hover:bg-teal-700 dark:hover:bg-teal-600 transition flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 dark:shadow-teal-500/10"
-                    >
-                        <PenLine size={18} />
-                        日記を書く
-                    </button>
-                    <button
-                        onClick={() => router.push("/diary/history")}
-                        className="py-4 rounded-xl bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold text-sm hover:bg-teal-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-teal-200 dark:border-teal-800"
-                    >
-                        <Calendar size={18} />
-                        カレンダー
-                    </button>
-                </div>
+                <div className="pb-4" />
             </div>
         </div>
     );

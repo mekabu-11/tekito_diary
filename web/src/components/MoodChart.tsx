@@ -44,7 +44,17 @@ export default function MoodChart({ data, isLoading }: MoodChartProps) {
     }
 
     if (data.length === 0) {
-        return null;
+        return (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+                    <TrendingUp size={15} className="text-teal-500" />
+                    気分トレンド
+                </h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">
+                    日記を書くと気分の変化がグラフで表示されます
+                </p>
+            </div>
+        );
     }
 
     const width = 280;
