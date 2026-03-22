@@ -5,8 +5,8 @@
  * Supabase Auth のセッションを検証し、以下のルーティング制御を行う:
  *
  * - 未認証ユーザー → /login にリダイレクト（API・ログインページ以外）
- * - 認証済みで /login にアクセス → /diary にリダイレクト
- * - 認証済みで / にアクセス → /diary にリダイレクト
+ * - 認証済みで /login にアクセス → /dashboard にリダイレクト
+ * - 認証済みで / にアクセス → /dashboard にリダイレクト
  * - ブラウザキャッシュを無効化（戻るボタンでの古いデータ表示を防止）
  */
 import { createServerClient } from '@supabase/ssr';
@@ -52,17 +52,17 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // 認証済みユーザーがログインページにアクセスした場合 → 日記ページへリダイレクト
+    // 認証済みユーザーがログインページにアクセスした場合 → ダッシュボードへリダイレクト
     if (user && request.nextUrl.pathname === '/login') {
         const url = request.nextUrl.clone();
-        url.pathname = '/diary';
+        url.pathname = '/dashboard';
         return NextResponse.redirect(url);
     }
 
-    // 認証済みユーザーがルートパスにアクセスした場合 → 日記ページへリダイレクト
+    // 認証済みユーザーがルートパスにアクセスした場合 → ダッシュボードへリダイレクト
     if (user && request.nextUrl.pathname === '/') {
         const url = request.nextUrl.clone();
-        url.pathname = '/diary';
+        url.pathname = '/dashboard';
         return NextResponse.redirect(url);
     }
 
