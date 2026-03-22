@@ -57,7 +57,7 @@ export default function LoginPage() {
             setIsLoading(false);
         } else {
             // ログイン成功: window.location で完全なページ遷移（Cookie の反映を確実にするため）
-            window.location.href = "/diary";
+            window.location.href = "/dashboard";
         }
     };
 
