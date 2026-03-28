@@ -53,7 +53,7 @@ export default function LoginPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-teal-600 dark:bg-teal-500 text-white mb-4">
                         <BookOpen size={32} />
                     </div>
-                    <h1 className="text-2xl font-extrabold text-slate-800 dark:text-white">てきとー日記</h1>
+                    <h1 className="text-2xl font-extrabold text-slate-800 dark:text-white">TekitoDiary</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">適当に書くだけでAIが日記にしてくれる</p>
                 </div>
 

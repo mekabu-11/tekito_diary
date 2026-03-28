@@ -310,7 +310,7 @@ export default function DiaryPage() {
             <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
                 <button onClick={() => router.push("/dashboard")} className="text-left group outline-none">
                     <h1 className="text-lg font-extrabold text-slate-800 dark:text-white transition group-hover:text-teal-600 dark:group-hover:text-teal-400">
-                        てきとー日記
+                        TekitoDiary
                     </h1>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 transition group-hover:text-teal-500">
                         ← ダッシュボードに戻る

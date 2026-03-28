@@ -16,13 +16,13 @@ import ThemeProvider from "@/components/ThemeProvider";
 
 /** アプリケーション全体のメタデータ（SEO・PWA用） */
 export const metadata: Metadata = {
-  title: "てきとー日記",
+  title: "TekitoDiary",
   description: "適当に書くだけでAIが日記にしてくれるアプリ",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "てきとー日記",
+    title: "TekitoDiary",
   },
 };
 

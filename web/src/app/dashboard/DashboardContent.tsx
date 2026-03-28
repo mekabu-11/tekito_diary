@@ -709,7 +709,7 @@ export default function DashboardContent() {
             {/* ===== ヘッダー: タイトル左端 ===== */}
             <header className="bg-white dark:bg-slate-800 border-b border-stone-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-extrabold text-slate-800 dark:text-white">てきとー日記</h1>
+                    <h1 className="text-lg font-extrabold text-slate-800 dark:text-white">TekitoDiary</h1>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {greeting}{displayName ? `、${displayName}さん` : ""}
                     </p>

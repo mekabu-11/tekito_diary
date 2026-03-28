@@ -1,6 +1,6 @@
 {
-    "name": "てきとー日記",
-    "short_name": "てきとー日記",
+    "name": "TekitoDiary",
+    "short_name": "TekitoDiary",
     "description": "適当に書くだけでAIが日記にしてくれるアプリ",
     "start_url": "/dashboard",
     "display": "standalone",
