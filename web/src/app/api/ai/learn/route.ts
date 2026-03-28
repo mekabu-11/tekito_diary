@@ -70,7 +70,7 @@ ${originalMemo}`;
     try {
         // OpenAI API でユーザー情報を抽出
         const result = await openai.chat.completions.create({
-            model: model || "gpt-5.4-mini",
+            model: model || "gpt-5.1",
             messages: [{ role: "user", content: prompt }],
         });
         const raw = (result.choices[0].message.content || "").trim();

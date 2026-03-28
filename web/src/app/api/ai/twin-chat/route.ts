@@ -99,7 +99,7 @@ ${diaryContext}
 
         // ストリーミングでレスポンスを返す
         const stream = await openai.chat.completions.create({
-            model: "gpt-5.4-mini",
+            model: "gpt-5.1",
             messages: [
                 { role: "system", content: systemPrompt },
                 ...messages,

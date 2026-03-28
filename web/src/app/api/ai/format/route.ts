@@ -87,7 +87,7 @@ ${text}${answersSection}`;
     try {
         // OpenAI API で整形を実行
         const result = await openai.chat.completions.create({
-            model: model || "gpt-5.4-mini",
+            model: model || "gpt-5.1",
             messages: [{ role: "user", content: prompt }],
         });
 
