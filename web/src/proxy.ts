@@ -1,7 +1,7 @@
 /**
- * 認証ミドルウェア
+ * 認証プロキシ
  *
- * Next.js の Middleware として全リクエストに対して実行される。
+ * Next.js の Proxy として全リクエストに対して実行される。
  * Supabase Auth のセッションを検証し、以下のルーティング制御を行う:
  *
  * - 未認証ユーザー → /login にリダイレクト（API・ログインページ以外）
@@ -12,7 +12,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let supabaseResponse = NextResponse.next({ request });
 
     // Supabase のサーバークライアントを作成（Cookie 経由でセッション管理）
@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
 }
 
 /**
- * Middleware の適用対象パスの設定
+ * Proxy の適用対象パスの設定
  * - 静的アセット（_next/static, _next/image, favicon.ico 等）は除外
  * - それ以外のすべてのパスに適用
  */
