@@ -61,14 +61,35 @@ describe("POST /api/ai/comment", () => {
         expect(json.comment).toBe("日記を書いて、AIからのコメントをもらいましょう！");
     });
 
-    it("正常にコメントを生成して返す", async () => {
+    it("正常にコメントを生成して返す（recentモード）", async () => {
         setAuthenticated();
         mockCreate.mockResolvedValue({
             choices: [{ message: { content: "充実した一日でしたね。" } }],
         });
-        const res = await POST(createMockRequest({ texts: ["今日は楽しかった"] }));
+        const res = await POST(createMockRequest({ texts: ["今日は楽しかった"], mode: "recent" }));
         const json = await res.json();
         expect(json.comment).toBe("充実した一日でしたね。");
+        
+        // プロンプトが recent モード用になっているか確認
+        const callArgs = mockCreate.mock.calls[0][0];
+        expect(callArgs.messages[0].content).toContain("数日前の行動を踏まえて");
+    });
+
+    it("tendencyモードの場合、傾向分析用のプロンプトで生成する", async () => {
+        setAuthenticated();
+        mockCreate.mockResolvedValue({
+            choices: [{ message: { content: "最近のリフレッシュ傾向が良いですね。" } }],
+        });
+        const res = await POST(createMockRequest({ 
+            texts: ["月曜: 疲れた", "火曜: 休んだ", "水曜: 元気になった"], 
+            mode: "tendency" 
+        }));
+        const json = await res.json();
+        expect(json.comment).toBe("最近のリフレッシュ傾向が良いですね。");
+        
+        // プロンプトが tendency モード用になっているか確認
+        const callArgs = mockCreate.mock.calls[0][0];
+        expect(callArgs.messages[0].content).toContain("ユーザーの行動傾向や感情のパターンを読み取り");
     });
 
     it("AI content が null の場合フォールバックメッセージを返す", async () => {

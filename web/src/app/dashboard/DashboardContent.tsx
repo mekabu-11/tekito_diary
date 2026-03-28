@@ -35,6 +35,7 @@ import {
     MessageCircle,
     Moon,
     PenLine,
+    Plus,
     Settings2,
     Shield,
     Shuffle,
@@ -184,6 +185,7 @@ export default function DashboardContent() {
     // --- TODO ---
     const [todos, setTodos] = useState<Todo[]>([]);
     const [isTodosLoading, setIsTodosLoading] = useState(false);
+    const [newTodoText, setNewTodoText] = useState("");
 
     // --- 並べ替え状態 ---
     const [isEditMode, setIsEditMode] = useState(false);
@@ -279,15 +281,47 @@ export default function DashboardContent() {
         await supabase.from("todos").delete().eq("id", id);
     };
 
+    const addTodo = async () => {
+        const text = newTodoText.trim();
+        if (!text) return;
+        setNewTodoText("");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+            .from("todos")
+            .insert({
+                user_id: user.id,
+                content: text,
+                diary_date: todayKey,
+                is_completed: false,
+            })
+            .select()
+            .single();
+        if (data) setTodos((prev) => [...prev, data]);
+    };
+
     const loadAIData = async (allDiaries: Diary[]) => {
         const recent7 = allDiaries.slice(0, 7).reverse();
         if (recent7.length >= 1) {
             loadMoodData(recent7);
         }
 
-        const recent3 = allDiaries.slice(0, 3);
-        if (recent3.length > 0) {
-            loadComment(recent3);
+        // コメント: 3日前前後の日記をもとにアドバイス
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const targetKey = toDateKey(threeDaysAgo);
+        // 3日前を中心に前後1日の日記を取得（2〜4日前）
+        const commentDiaries = allDiaries.filter((d) => {
+            const diff = Math.abs(
+                (new Date(targetKey).getTime() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            return diff <= 1;
+        });
+        if (commentDiaries.length > 0) {
+            loadComment(commentDiaries, "recent");
+        } else if (allDiaries.length > 0) {
+            // 3日前付近の日記がなければ直近5件からユーザーの傾向を分析
+            loadComment(allDiaries.slice(0, 5), "tendency");
         }
 
         const { start, end } = getLastWeekRange();
@@ -325,7 +359,7 @@ export default function DashboardContent() {
         finally { setIsMoodLoading(false); }
     };
 
-    const loadComment = async (recentDiaries: Diary[]) => {
+    const loadComment = async (recentDiaries: Diary[], mode: "recent" | "tendency" = "recent") => {
         const cacheKey = "dashboard_comment";
         const cached = getCachedData<string>(cacheKey, todayKey);
         if (cached) {
@@ -340,6 +374,7 @@ export default function DashboardContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     texts: recentDiaries.map((d) => d.formatted_text),
+                    mode,
                 }),
             });
             const data = await res.json();
@@ -559,17 +594,47 @@ export default function DashboardContent() {
             case "todos": {
                 const incomplete = todos.filter((t) => !t.is_completed);
                 const completed = todos.filter((t) => t.is_completed);
-                if (!isTodosLoading && todos.length === 0) return null;
                 return (
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
                         <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5 shrink-0">
                             <CheckCircle2 size={15} className="text-violet-500" />
                             TODO
+                            {todos.length > 0 && (
+                                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-1">
+                                    {incomplete.length}件
+                                </span>
+                            )}
                         </h3>
+                        {/* 手動追加入力 */}
+                        <form
+                            onSubmit={(e) => { e.preventDefault(); addTodo(); }}
+                            className="flex gap-2 mb-3 shrink-0"
+                        >
+                            <input
+                                type="text"
+                                value={newTodoText}
+                                onChange={(e) => setNewTodoText(e.target.value)}
+                                placeholder="新しいTODOを追加..."
+                                className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-stone-200 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:focus:ring-violet-500 focus:border-transparent"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!newTodoText.trim()}
+                                className="shrink-0 p-1.5 rounded-lg bg-violet-500 text-white hover:bg-violet-600 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                                <Plus size={16} />
+                            </button>
+                        </form>
                         {isTodosLoading ? (
                             <div className="flex items-center gap-2 flex-1">
                                 <Loader2 size={14} className="animate-spin text-slate-400" />
                                 <span className="text-xs text-slate-400">読み込み中...</span>
+                            </div>
+                        ) : todos.length === 0 ? (
+                            <div className="flex-1 flex items-center justify-center">
+                                <p className="text-xs text-slate-400 dark:text-slate-500">
+                                    TODOはまだありません。上から追加するか、日記を書くとAIが自動抽出します。
+                                </p>
                             </div>
                         ) : (
                             <div className="flex-1 overflow-y-auto space-y-1">
