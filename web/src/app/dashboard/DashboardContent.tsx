@@ -42,7 +42,6 @@ import {
     Sparkles,
     Sun,
     TrendingUp,
-    Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -773,14 +772,7 @@ export default function DashboardContent() {
                 </div>
 
                 {/* --- 新機能リンク --- */}
-                <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => router.push("/social-graph")}
-                        className="py-3 rounded-xl bg-white dark:bg-slate-800 text-pink-600 dark:text-pink-300 font-bold text-sm hover:bg-pink-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-pink-200 dark:border-pink-800"
-                    >
-                        <Users size={18} />
-                        人間関係
-                    </button>
+                <div className="grid grid-cols-1 gap-3">
                     <button
                         onClick={() => router.push("/twin-chat")}
                         className="py-3 rounded-xl bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-300 font-bold text-sm hover:bg-violet-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-violet-200 dark:border-violet-800"
