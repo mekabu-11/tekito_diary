@@ -35,6 +35,14 @@ export async function POST(request: NextRequest) {
 
     const { text, userContext, model } = await request.json();
 
+    // 入力長制限
+    if (typeof text === "string" && text.length > 5000) {
+        return NextResponse.json({ error: "メモが長すぎます（5000字以内）" }, { status: 400 });
+    }
+    if (typeof userContext === "string" && userContext.length > 2000) {
+        return NextResponse.json({ error: "コンテキストが長すぎます" }, { status: 400 });
+    }
+
     // AI に深掘り質問を生成させるプロンプト
     const prompt = `以下のメモを読んで、日記をより具体的にするための深掘り質問を生成してください。
 

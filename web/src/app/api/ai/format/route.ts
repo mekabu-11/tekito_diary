@@ -32,6 +32,17 @@ export async function POST(request: NextRequest) {
 
     const { text, currentTime, answers, existingText, userContext, model } = await request.json();
 
+    // 入力長制限
+    if (typeof text === "string" && text.length > 5000) {
+        return NextResponse.json({ error: "メモが長すぎます（5000字以内）" }, { status: 400 });
+    }
+    if (typeof existingText === "string" && existingText.length > 5000) {
+        return NextResponse.json({ error: "既存テキストが長すぎます" }, { status: 400 });
+    }
+    if (typeof userContext === "string" && userContext.length > 2000) {
+        return NextResponse.json({ error: "コンテキストが長すぎます" }, { status: 400 });
+    }
+
     // 時間帯の推測に使うコンテキスト（メモに時間の手がかりがない場合の参考）
     const timeContext = `現在の時刻は ${currentTime} です。メモに時間帯の手がかりがない場合、この時刻を参考に時間帯を自然に推測して反映してください。ただし無理に付け足さなくてよいです。`;
 

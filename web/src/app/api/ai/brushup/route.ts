@@ -34,6 +34,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "テキストが必要です" }, { status: 400 });
     }
 
+    // 入力長制限
+    if (typeof text === "string" && text.length > 5000) {
+        return NextResponse.json({ error: "テキストが長すぎます（5000字以内）" }, { status: 400 });
+    }
+    if (typeof instruction === "string" && instruction.length > 500) {
+        return NextResponse.json({ error: "指示が長すぎます（500字以内）" }, { status: 400 });
+    }
+
     let prompt: string;
 
     if (instruction?.trim()) {

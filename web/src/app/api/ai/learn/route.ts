@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
 
     const { diaryText, originalMemo, dateKey, currentProfile, model } = await request.json();
 
+    // 入力長制限
+    if (typeof diaryText === "string" && diaryText.length > 5000) {
+        return NextResponse.json({ error: "日記テキストが長すぎます（5000字以内）" }, { status: 400 });
+    }
+    if (typeof originalMemo === "string" && originalMemo.length > 3000) {
+        return NextResponse.json({ error: "メモが長すぎます（3000字以内）" }, { status: 400 });
+    }
+
     // AI にユーザー情報を抽出させるプロンプト
     // 現在のプロファイルを渡し、既存情報を踏まえた上で新しい情報を抽出させる
     const prompt = `以下の日記を読んで、この人についての情報を2つのカテゴリに分けて抽出してください。

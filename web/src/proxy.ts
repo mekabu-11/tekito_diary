@@ -10,6 +10,7 @@
  * - ブラウザキャッシュを無効化（戻るボタンでの古いデータ表示を防止）
  */
 import { createServerClient } from '@supabase/ssr';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
@@ -43,6 +44,17 @@ export async function proxy(request: NextRequest) {
 
     // 現在のセッションからユーザー情報を取得
     const { data: { user } } = await supabase.auth.getUser();
+
+    // AIルートのレートリミット（認証済みユーザーのみ対象）
+    if (user && request.nextUrl.pathname.startsWith('/api/ai/')) {
+        const { allowed } = checkRateLimit(user.id);
+        if (!allowed) {
+            return NextResponse.json(
+                { error: "リクエストが多すぎます。1分後に再試行してください。" },
+                { status: 429 }
+            );
+        }
+    }
 
     // 未認証ユーザーが保護されたページにアクセスした場合 → ログインページへリダイレクト
     // ただし /login と /api パスはリダイレクト対象外
