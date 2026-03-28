@@ -265,6 +265,15 @@ export default function DiaryPage() {
                     model: "gpt-5.4-mini",
                 }),
             });
+            fetch("/api/ai/todos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    diaryText: data.formatted,
+                    dateKey,
+                    model: "gpt-5.4-mini",
+                }),
+            });
 
             setText("");
             setShowFollowUp(false);

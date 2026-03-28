@@ -14,6 +14,7 @@
  *
  * スコア: 1=とても悲しい, 2=やや落ち込み, 3=普通, 4=良い, 5=とても良い
  */
+import { extractJsonArray, extractJsonObject } from "@/lib/parse-ai-json";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -56,15 +57,14 @@ ${texts.map((t: { date: string; text: string }) => `[${t.date}]\n${t.text}`).joi
         });
 
         const content = result.choices[0].message.content || "{}";
-        let parsed;
-        try {
-            parsed = JSON.parse(content);
-        } catch {
-            return NextResponse.json({ scores: [] });
-        }
 
         // レスポンスが配列の場合とオブジェクトの場合の両方に対応
-        const scores = Array.isArray(parsed) ? parsed : parsed.scores || parsed.results || [];
+        const asArray = extractJsonArray(content);
+        if (asArray) {
+            return NextResponse.json({ scores: asArray });
+        }
+        const asObject = extractJsonObject(content);
+        const scores = asObject ? (asObject.scores || asObject.results || []) : [];
         return NextResponse.json({ scores });
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "予期しないエラーが発生しました";

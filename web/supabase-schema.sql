@@ -126,6 +126,26 @@ create policy "Users can insert own diary versions" on diary_versions for insert
 create policy "Users can delete own diary versions" on diary_versions for delete using (auth.uid() = user_id);
 
 -- ============================================
+-- TODO テーブル（日記からAI抽出）
+-- ============================================
+
+create table if not exists todos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  content text not null,
+  diary_date text not null,
+  is_completed boolean default false,
+  created_at timestamptz default now()
+);
+
+alter table todos enable row level security;
+
+create policy "Users can view own todos" on todos for select using (auth.uid() = user_id);
+create policy "Users can insert own todos" on todos for insert with check (auth.uid() = user_id);
+create policy "Users can update own todos" on todos for update using (auth.uid() = user_id);
+create policy "Users can delete own todos" on todos for delete using (auth.uid() = user_id);
+
+-- ============================================
 -- PWA プッシュ通知購読テーブル
 -- 既存のDBに追加する場合は以下だけ実行してください
 -- ============================================

@@ -23,6 +23,7 @@
  * - currentProfile: 現在のコアプロファイル（差分更新の参考）
  * - model: 使用する AI モデル名（任意、デフォルト: gpt-5.4-mini）
  */
+import { extractJsonObject } from "@/lib/parse-ai-json";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -74,22 +75,13 @@ ${originalMemo}`;
         });
         const raw = (result.choices[0].message.content || "").trim();
 
-        // --- JSON パース処理（AI の出力フォーマットのブレに対応） ---
-
-        // 1. バッククォートによるコードブロック (```json ... ```) を除去
-        let cleanRaw = raw.replace(/^```json/im, '').replace(/```$/m, '').trim();
-
-        // 2. 波括弧 {} の外側にある余計な文字（説明テキスト等）を取り除く
-        const match = cleanRaw.match(/\{[\s\S]*\}/);
-        if (!match) {
-            // JSON が見つからない場合は空データを返す
+        // AI の出力から JSON オブジェクトを抽出（コードブロックや説明テキストに対応）
+        const parsed = extractJsonObject(raw);
+        if (!parsed) {
             return NextResponse.json({ profile: null, episodes: [] });
         }
-        cleanRaw = match[0];
-
-        const parsed = JSON.parse(cleanRaw);
         const newProfile = parsed.profile;   // 抽出されたプロファイル情報
-        const newEpisodes = parsed.episodes; // 抽出されたエピソード情報
+        const newEpisodes = parsed.episodes as string[] | undefined; // 抽出されたエピソード情報
 
         // コアプロファイルを Supabase に保存（upsert: 存在すれば更新、なければ挿入）
         if (newProfile) {
@@ -101,7 +93,7 @@ ${originalMemo}`;
         }
 
         // エピソードを Supabase に保存
-        if (newEpisodes?.length > 0) {
+        if (newEpisodes && newEpisodes.length > 0) {
             await supabase.from("episodes").insert(
                 newEpisodes.map((content: string) => ({
                     user_id: user.id,

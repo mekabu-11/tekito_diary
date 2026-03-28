@@ -19,6 +19,7 @@
  *
  * レスポンス: { questions: [{ question: "質問文", choices: ["選択肢1", "選択肢2", ...] }] }
  */
+import { extractJsonArray } from "@/lib/parse-ai-json";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -64,8 +65,7 @@ ${text}`;
 
         // AI の出力から JSON 配列部分を抽出（余計なテキストが含まれる場合に対応）
         const raw = (result.choices[0].message.content || "").trim();
-        const jsonMatch = raw.match(/\[[\s\S]*\]/);
-        const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        const questions = extractJsonArray(raw) || [];
 
         // 最大10問までに制限して返す
         return NextResponse.json({ questions: questions.slice(0, 10) });

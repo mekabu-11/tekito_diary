@@ -27,6 +27,8 @@ import {
     BookOpen,
     Bookmark,
     Calendar,
+    CheckCircle2,
+    Circle,
     GripHorizontal,
     Loader2,
     LogOut,
@@ -65,6 +67,13 @@ interface Diary {
     display_date: string;
     original_text: string;
     formatted_text: string;
+}
+
+interface Todo {
+    id: string;
+    content: string;
+    diary_date: string;
+    is_completed: boolean;
 }
 
 // ========== ユーティリティ関数 ==========
@@ -172,6 +181,10 @@ export default function DashboardContent() {
     // --- ランダム日記 ---
     const [randomDiary, setRandomDiary] = useState<Diary | null>(null);
 
+    // --- TODO ---
+    const [todos, setTodos] = useState<Todo[]>([]);
+    const [isTodosLoading, setIsTodosLoading] = useState(false);
+
     // --- 並べ替え状態 ---
     const [isEditMode, setIsEditMode] = useState(false);
     const [widgets, setWidgets] = useState<{ id: string; enabled: boolean }[]>([
@@ -179,6 +192,7 @@ export default function DashboardContent() {
         { id: "comment", enabled: true },
         { id: "report", enabled: false },
         { id: "random", enabled: true },
+        { id: "todos", enabled: true },
     ]);
 
     // --- カルーセル状態 ---
@@ -228,6 +242,7 @@ export default function DashboardContent() {
                 pickRandomDiary(data);
                 loadAIData(data);
             }
+            loadTodos();
         } finally {
             setIsLoading(false);
         }
@@ -236,6 +251,33 @@ export default function DashboardContent() {
     // ========================================
     // AI データ取得
     // ========================================
+
+    const loadTodos = async () => {
+        setIsTodosLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase
+                .from("todos")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: true });
+            if (data) setTodos(data);
+        } finally {
+            setIsTodosLoading(false);
+        }
+    };
+
+    const toggleTodo = async (todo: Todo) => {
+        const updated = { ...todo, is_completed: !todo.is_completed };
+        setTodos((prev) => prev.map((t) => t.id === todo.id ? updated : t));
+        await supabase.from("todos").update({ is_completed: updated.is_completed }).eq("id", todo.id);
+    };
+
+    const deleteTodo = async (id: string) => {
+        setTodos((prev) => prev.filter((t) => t.id !== id));
+        await supabase.from("todos").delete().eq("id", id);
+    };
 
     const loadAIData = async (allDiaries: Diary[]) => {
         const recent7 = allDiaries.slice(0, 7).reverse();
@@ -429,6 +471,7 @@ export default function DashboardContent() {
             case "comment": return { title: "AIからのアドバイス", icon: <MessageCircle size={16} className="text-teal-500" /> };
             case "report": return { title: "先週の振り返り", icon: <BookOpen size={16} className="text-teal-500" /> };
             case "random": return { title: "過去の日記ピックアップ", icon: <Bookmark size={16} className="text-amber-500" /> };
+            case "todos": return { title: "TODO", icon: <CheckCircle2 size={16} className="text-violet-500" /> };
             default: return { title: id, icon: <Settings2 size={16} /> };
         }
     };
@@ -513,6 +556,55 @@ export default function DashboardContent() {
                         </div>
                     </div>
                 );
+            case "todos": {
+                const incomplete = todos.filter((t) => !t.is_completed);
+                const completed = todos.filter((t) => t.is_completed);
+                if (!isTodosLoading && todos.length === 0) return null;
+                return (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-stone-100 dark:border-slate-700 h-full flex flex-col">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5 shrink-0">
+                            <CheckCircle2 size={15} className="text-violet-500" />
+                            TODO
+                        </h3>
+                        {isTodosLoading ? (
+                            <div className="flex items-center gap-2 flex-1">
+                                <Loader2 size={14} className="animate-spin text-slate-400" />
+                                <span className="text-xs text-slate-400">読み込み中...</span>
+                            </div>
+                        ) : (
+                            <div className="flex-1 overflow-y-auto space-y-1">
+                                {incomplete.map((todo) => (
+                                    <div key={todo.id} className="flex items-start gap-2 group">
+                                        <button onClick={() => toggleTodo(todo)} className="mt-0.5 shrink-0 text-stone-300 dark:text-slate-600 hover:text-violet-500 dark:hover:text-violet-400 transition">
+                                            <Circle size={16} />
+                                        </button>
+                                        <span className="flex-1 text-sm text-slate-700 dark:text-slate-300 leading-snug">{todo.content}</span>
+                                        <button onClick={() => deleteTodo(todo.id)} className="shrink-0 text-stone-200 dark:text-slate-700 hover:text-red-400 dark:hover:text-red-400 transition opacity-0 group-hover:opacity-100 text-xs px-1">
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                                {completed.length > 0 && (
+                                    <>
+                                        {incomplete.length > 0 && <div className="border-t border-stone-100 dark:border-slate-700 my-2" />}
+                                        {completed.map((todo) => (
+                                            <div key={todo.id} className="flex items-start gap-2 group opacity-50">
+                                                <button onClick={() => toggleTodo(todo)} className="mt-0.5 shrink-0 text-violet-400 dark:text-violet-500 hover:text-stone-300 dark:hover:text-slate-600 transition">
+                                                    <CheckCircle2 size={16} />
+                                                </button>
+                                                <span className="flex-1 text-sm text-slate-400 dark:text-slate-500 leading-snug line-through">{todo.content}</span>
+                                                <button onClick={() => deleteTodo(todo.id)} className="shrink-0 text-stone-200 dark:text-slate-700 hover:text-red-400 dark:hover:text-red-400 transition opacity-0 group-hover:opacity-100 text-xs px-1">
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
             default:
                 return null;
         }
