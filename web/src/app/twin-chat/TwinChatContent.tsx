@@ -24,6 +24,8 @@ interface ChatMessage {
 }
 
 const STORAGE_KEY = "twin_chat_history";
+/** メッセージ1件あたりの最大文字数（API側と同じ制限） */
+const MAX_MESSAGE_LENGTH = 1000;
 
 export default function TwinChatContent() {
     const router = useRouter();
@@ -61,7 +63,7 @@ export default function TwinChatContent() {
     // メッセージ送信
     const sendMessage = async () => {
         const text = input.trim();
-        if (!text || isStreaming) return;
+        if (!text || isStreaming || text.length > MAX_MESSAGE_LENGTH) return;
 
         const userMessage: ChatMessage = { role: "user", content: text };
         const newMessages = [...messages, userMessage];
@@ -267,19 +269,39 @@ export default function TwinChatContent() {
             {/* 入力エリア */}
             <div className="shrink-0 bg-white dark:bg-slate-800 border-t border-stone-200 dark:border-slate-700 px-4 py-3 max-w-lg mx-auto w-full">
                 <div className="flex gap-2 items-end">
-                    <textarea
-                        ref={inputRef}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="メッセージを入力..."
-                        rows={1}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-stone-200 dark:border-slate-600 bg-stone-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:focus:ring-violet-500 focus:border-transparent resize-none max-h-32"
-                        style={{ minHeight: "42px" }}
-                    />
+                    <div className="flex-1 flex flex-col">
+                        <textarea
+                            ref={inputRef}
+                            value={input}
+                            onChange={(e) => {
+                                if (e.target.value.length <= MAX_MESSAGE_LENGTH) {
+                                    setInput(e.target.value);
+                                }
+                            }}
+                            onKeyDown={handleKeyDown}
+                            placeholder="メッセージを入力..."
+                            rows={1}
+                            maxLength={MAX_MESSAGE_LENGTH}
+                            className={`w-full text-sm px-4 py-2.5 rounded-xl border bg-stone-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent resize-none max-h-32 transition ${
+                                input.length >= MAX_MESSAGE_LENGTH
+                                    ? "border-red-400 dark:border-red-500 focus:ring-red-400 dark:focus:ring-red-500"
+                                    : "border-stone-200 dark:border-slate-600 focus:ring-violet-400 dark:focus:ring-violet-500"
+                            }`}
+                            style={{ minHeight: "42px" }}
+                        />
+                        {input.length > MAX_MESSAGE_LENGTH * 0.8 && (
+                            <p className={`text-[10px] mt-1 text-right transition ${
+                                input.length >= MAX_MESSAGE_LENGTH
+                                    ? "text-red-500 dark:text-red-400 font-bold"
+                                    : "text-amber-500 dark:text-amber-400"
+                            }`}>
+                                {input.length} / {MAX_MESSAGE_LENGTH}
+                            </p>
+                        )}
+                    </div>
                     <button
                         onClick={sendMessage}
-                        disabled={!input.trim() || isStreaming}
+                        disabled={!input.trim() || isStreaming || input.length > MAX_MESSAGE_LENGTH}
                         className="shrink-0 w-10 h-10 rounded-xl bg-violet-500 text-white hover:bg-violet-600 transition flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         {isStreaming ? (

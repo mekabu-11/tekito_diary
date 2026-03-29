@@ -83,7 +83,7 @@ export default function AdminPage() {
         await fetch("/api/admin/users", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId }),
+            body: JSON.stringify({ id: userId }),
         });
         await loadUsers();
     };

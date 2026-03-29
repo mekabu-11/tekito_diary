@@ -775,7 +775,7 @@ export default function DashboardContent() {
                 <div className="grid grid-cols-1 gap-3">
                     <button
                         onClick={() => router.push("/twin-chat")}
-                        className="py-3 rounded-xl bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-300 font-bold text-sm hover:bg-violet-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-violet-200 dark:border-violet-800"
+                        className="py-3 rounded-xl bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold text-sm hover:bg-teal-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-teal-200 dark:border-teal-800"
                     >
                         <Sparkles size={18} />
                         AI対話
