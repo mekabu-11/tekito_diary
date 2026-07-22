@@ -177,12 +177,6 @@ cd web && npm test
 3. Environment Variables に `.env.local` と同じ内容を登録
 4. デプロイを実行
 
----
-
-## 管理者への昇格
-
-Supabase SQL Editor で以下のクエリを実行し、特定のアカウントのロールを `admin` に変更します。
-
 ```sql
 UPDATE user_profiles SET role = 'admin' WHERE id = '対象ユーザーのUUID';
 ```
